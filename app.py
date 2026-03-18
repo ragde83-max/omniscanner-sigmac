@@ -15,7 +15,6 @@ import tempfile
 # 1. CONFIGURACIÓN DE LA PÁGINA WEB
 # ==========================================
 st.set_page_config(page_title="OmniScanner | Sigmac Corp", page_icon="🛡️", layout="centered")
-st.set_option('deprecation.showPyplotGlobalUse', False)
 
 if os.path.exists("logo_sigmac.jpg"):
     st.image("logo_sigmac.jpg", width=200) 
