@@ -1,0 +1,5 @@
+streamlit
+fpdf2
+matplotlib
+numpy
+google-genai
