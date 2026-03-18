@@ -12,9 +12,16 @@ from google import genai
 import tempfile
 
 # ==========================================
-# 1. CONFIGURACIÓN DE LA PÁGINA WEB
+# 1. CONFIGURACIÓN Y MEMORIA DE SESIÓN (NUEVO)
 # ==========================================
 st.set_page_config(page_title="OmniScanner | Sigmac Corp", page_icon="🛡️", layout="centered")
+
+# Inicializar la memoria temporal para evitar reseteos al descargar
+if 'analisis_completado' not in st.session_state:
+    st.session_state.analisis_completado = False
+    st.session_state.pdf_ejecutivo = None
+    st.session_state.pdf_tecnico = None
+    st.session_state.objetivo_nombre = ""
 
 if os.path.exists("logo_sigmac.jpg"):
     st.image("logo_sigmac.jpg", width=200) 
@@ -28,7 +35,12 @@ st.markdown("Motor de análisis de vulnerabilidades impulsado por Inteligencia A
 with st.sidebar:
     st.header("⚙️ Configuración del Motor")
     api_key_input = st.text_input("Ingresa tu API Key de Gemini:", type="password")
-    st.info("🔒 La API Key no se guarda en ningún servidor. Se utiliza de forma temporal en la memoria durante esta sesión para garantizar la confidencialidad de los datos del cliente.")
+    st.info("🔒 La API Key no se guarda en ningún servidor. Se utiliza de forma temporal en la memoria durante esta sesión.")
+    
+    # Botón para reiniciar el análisis si el usuario quiere subir otro XML
+    if st.button("🔄 Nuevo Análisis"):
+        st.session_state.analisis_completado = False
+        st.rerun()
 
 # ==========================================
 # 3. FUNCIONES CORE Y BLINDAJE DE PDF
@@ -38,7 +50,6 @@ def limpiar_html(texto):
     return re.sub(r'\s+', ' ', re.sub(r'<[^>]+>', ' ', str(texto))).strip()
 
 def blindaje_fpdf(texto):
-    """Limpia el texto natural de la IA para que pueda ser justificado con multi_cell"""
     if not texto: return "N/A"
     t = str(texto).replace('\r', '').encode('latin-1', 'replace').decode('latin-1')
     t = re.sub(r'[-=_*#]{10,}', '---', t) 
@@ -46,11 +57,9 @@ def blindaje_fpdf(texto):
     return t
 
 def escribir_bloque_seguro(pdf, texto, width=90, alto_linea=5):
-    """Bypass total a multi_cell para inventarios técnicos. Corta el texto nativamente."""
     if not texto: return
     texto_str = str(texto).replace('\r', '').replace('\t', ' ')
     texto_str = texto_str.encode('latin-1', 'replace').decode('latin-1')
-    
     parrafos = texto_str.split('\n')
     for p in parrafos:
         if not p.strip():
@@ -191,119 +200,154 @@ class ReporteSigmac(FPDF):
 # ==========================================
 # 6. INTERFAZ STREAMLIT PRINCIPAL
 # ==========================================
-st.markdown("### 1. Carga de Datos")
-archivo_xml = st.file_uploader("Sube el archivo XML del escáner (Nessus, Invicti, OpenVAS, AppScan, Checkmarx)", type=["xml"])
 
-if st.button("Generar Reportes (Ejecutivo y Técnico)", type="primary"):
-    if not api_key_input:
-        st.error("⚠️ Por favor ingresa tu API Key en la barra lateral para continuar.")
-    elif not archivo_xml:
-        st.warning("⚠️ Sube un archivo XML válido primero.")
-    else:
-        with st.spinner("Analizando infraestructura y redactando reportes con Inteligencia Artificial. Esto puede tomar un par de minutos..."):
-            contenido_xml = archivo_xml.read().decode('utf-8', errors='ignore')
-            r_sev, r_tip, madurez, hallazgos, obj, escaner = extraer_datos_universales(contenido_xml)
-            
-            if hallazgos:
-                # Usar directorio temporal para evitar conflictos en la nube
-                with tempfile.TemporaryDirectory() as tmpdir:
-                    p_sev = os.path.join(tmpdir, "sev.png")
-                    p_tip = os.path.join(tmpdir, "tip.png")
-                    p_rad = os.path.join(tmpdir, "rad.png")
-                    p_pdf_ejecutivo = os.path.join(tmpdir, "Ejecutivo.pdf")
-                    p_pdf_tecnico = os.path.join(tmpdir, "Tecnico.pdf")
-                    
-                    # Generar Gráficas
-                    cliente = genai.Client(api_key=api_key_input)
-                    colores = {"Critical": '#8B0000', "High": '#D32F2F', "Medium": '#F57C00', "Low": '#FBC02D', "Informational": '#455A64'}
-                    
-                    plt.figure(figsize=(4.5, 3.5))
-                    plt.pie([v for v in r_sev.values() if v>0], labels=[k for k,v in r_sev.items() if v>0], colors=[colores.get(c, '#CCCCCC') for c in [k for k,v in r_sev.items() if v>0]], autopct='%1.1f%%', textprops={'fontsize':9, 'weight':'bold'})
-                    plt.gcf().gca().add_artist(plt.Circle((0,0),0.70,fc='white')); plt.savefig(p_sev, dpi=300, transparent=True); plt.close()
-                    
-                    plt.figure(figsize=(5, 3))
-                    plt.barh(list(r_tip.keys()), list(r_tip.values()), color='#388E3C'); plt.gca().spines['top'].set_visible(False); plt.gca().spines['right'].set_visible(False)
-                    plt.savefig(p_tip, dpi=300, transparent=True); plt.close()
+# Solo mostrar el botón de generación si no hemos terminado el análisis
+if not st.session_state.analisis_completado:
+    st.markdown("### 1. Carga de Datos")
+    archivo_xml = st.file_uploader("Sube el archivo XML del escáner (Nessus, Invicti, OpenVAS, AppScan, Checkmarx)", type=["xml"])
 
-                    labels = np.array(list(madurez.keys())); stats = np.array(list(madurez.values()))
-                    angles = np.linspace(0, 2*np.pi, len(labels), endpoint=False)
-                    stats = np.concatenate((stats, [stats[0]])); angles = np.concatenate((angles, [angles[0]]))
-                    fig, ax = plt.subplots(figsize=(4.5, 4.5), subplot_kw=dict(polar=True))
-                    ax.fill(angles, stats, color='#388E3C', alpha=0.25); ax.plot(angles, stats, color='#388E3C', linewidth=2)
-                    ax.set_yticklabels([]); ax.set_xticks(angles[:-1]); ax.set_xticklabels(labels, fontsize=9, fontweight='bold', color='#2C3E50'); ax.set_ylim(0, 10)
-                    plt.savefig(p_rad, dpi=300, transparent=True); plt.close()
-
-                    # IA Pipeline
-                    hallazgos_traducidos = traducir_inventario_json(hallazgos, cliente)
-                    ia_ejecutiva = analizar_ejecutivo_con_ia(hallazgos_traducidos, obj, escaner, cliente)
-                    ia_tecnica = analizar_tecnico_con_ia(hallazgos_traducidos, obj, escaner, cliente)
-                    
-                    # Ensamblar Ejecutivo
-                    pdf_ejec = ReporteSigmac("logo_sigmac.jpg", "Auditoria Estrategica")
-                    pdf_ejec.add_page(); pdf_ejec.ln(40)
-                    if os.path.exists("logo_sigmac.jpg"): pdf_ejec.image("logo_sigmac.jpg", x=55, y=50, w=100)
-                    pdf_ejec.ln(60); pdf_ejec.set_font("helvetica", 'B', 24); pdf_ejec.set_text_color(44, 62, 80); pdf_ejec.cell(0, 15, text="AUDITORIA ESTRATEGICA 360", align='C', new_x="LMARGIN", new_y="NEXT")
-                    pdf_ejec.set_font("helvetica", '', 14); pdf_ejec.set_text_color(56, 142, 60); pdf_ejec.cell(0, 10, text=f"Motor: {escaner}", align='C', new_x="LMARGIN", new_y="NEXT"); pdf_ejec.ln(30)
-                    pdf_ejec.set_font("helvetica", 'B', 12); pdf_ejec.set_text_color(44, 62, 80); pdf_ejec.cell(0, 6, text=f"Objetivo: {obj}", align='C', new_x="LMARGIN", new_y="NEXT")
-                    pdf_ejec.set_font("helvetica", '', 12); pdf_ejec.cell(0, 6, text=f"Fecha: {datetime.now().strftime('%d de %B, %Y')}", align='C', new_x="LMARGIN", new_y="NEXT")
-
-                    pdf_ejec.add_page(); pdf_ejec.set_font("helvetica", 'B', 16); pdf_ejec.set_text_color(44, 62, 80); pdf_ejec.cell(0, 10, text="1. Dashboard de Madurez y Postura", new_x="LMARGIN", new_y="NEXT")
-                    pdf_ejec.image(p_rad, x=10, y=pdf_ejec.get_y(), w=90); pdf_ejec.image(p_sev, x=100, y=pdf_ejec.get_y()+5, w=90); pdf_ejec.ln(90)
-                    pdf_ejec.image(p_tip, x=50, y=pdf_ejec.get_y(), w=110); pdf_ejec.ln(80)
-                    
-                    pdf_ejec.add_page(); pdf_ejec.set_font("helvetica", 'B', 16); pdf_ejec.set_text_color(44, 62, 80); pdf_ejec.cell(0, 10, text="2. Analisis Directivo", new_x="LMARGIN", new_y="NEXT"); pdf_ejec.ln(5)
-                    pdf_ejec.set_font("helvetica", '', 11); pdf_ejec.set_text_color(50, 50, 50)
-                    pdf_ejec.multi_cell(0, 6, text=blindaje_fpdf(ia_ejecutiva), align='J') 
-                    pdf_ejec.output(p_pdf_ejecutivo)
-
-                    # Ensamblar Técnico
-                    pdf_tec = ReporteSigmac("logo_sigmac.jpg", "Reporte Tecnico Detallado")
-                    pdf_tec.add_page(); pdf_tec.ln(40)
-                    if os.path.exists("logo_sigmac.jpg"): pdf_tec.image("logo_sigmac.jpg", x=55, y=50, w=100)
-                    pdf_tec.ln(60); pdf_tec.set_font("helvetica", 'B', 24); pdf_tec.set_text_color(44, 62, 80); pdf_tec.cell(0, 15, text="REPORTE TÉCNICO DE REMEDIACIÓN", align='C', new_x="LMARGIN", new_y="NEXT")
-                    pdf_tec.set_font("helvetica", '', 14); pdf_tec.set_text_color(56, 142, 60); pdf_tec.cell(0, 10, text=f"Guía de Bastionado y Hardening", align='C', new_x="LMARGIN", new_y="NEXT"); pdf_tec.ln(30)
-                    pdf_tec.set_font("helvetica", 'B', 12); pdf_tec.set_text_color(44, 62, 80); pdf_tec.cell(0, 6, text=f"Objetivo: {obj}", align='C', new_x="LMARGIN", new_y="NEXT")
-
-                    pdf_tec.add_page(); pdf_tec.set_font("helvetica", 'B', 16); pdf_tec.set_text_color(44, 62, 80); pdf_tec.cell(0, 10, text="1. Metricas Tecnicas y Distribucion", new_x="LMARGIN", new_y="NEXT"); pdf_tec.ln(5)
-                    pdf_tec.image(p_sev, x=10, y=pdf_tec.get_y(), w=85); pdf_tec.image(p_tip, x=105, y=pdf_tec.get_y()+5, w=95); pdf_tec.ln(80)
-
-                    pdf_tec.add_page(); pdf_tec.set_font("helvetica", 'B', 16); pdf_tec.set_text_color(44, 62, 80); pdf_tec.cell(0, 10, text="2. Estrategia de Remediacion (IA)", new_x="LMARGIN", new_y="NEXT"); pdf_tec.ln(5)
-                    pdf_tec.set_font("helvetica", '', 11); pdf_tec.set_text_color(50, 50, 50)
-                    pdf_tec.multi_cell(0, 6, text=blindaje_fpdf(ia_tecnica), align='J')
-                    
-                    pdf_tec.add_page(); pdf_tec.set_font("helvetica", 'B', 16); pdf_tec.set_text_color(44, 62, 80); pdf_tec.cell(0, 10, text="3. Inventario Detallado de Vulnerabilidades", new_x="LMARGIN", new_y="NEXT"); pdf_tec.ln(5)
-                    
-                    orden_severidad = {"Critical": 1, "High": 2, "Medium": 3, "Low": 4, "Informational": 5}
-                    hallazgos_ordenados = sorted(hallazgos_traducidos, key=lambda x: orden_severidad.get(x.get("Riesgo", "Informational"), 6))
-                    
-                    for h in hallazgos_ordenados:
-                        pdf_tec.set_font("helvetica", 'B', 11)
-                        riesgo_str = h.get('Riesgo', 'Informational')
-                        if riesgo_str == 'Critical': pdf_tec.set_text_color(139, 0, 0)
-                        elif riesgo_str == 'High': pdf_tec.set_text_color(211, 47, 47)
-                        elif riesgo_str == 'Medium': pdf_tec.set_text_color(245, 124, 0)
-                        elif riesgo_str == 'Low': pdf_tec.set_text_color(251, 192, 45)
-                        else: pdf_tec.set_text_color(69, 90, 100)
+    if st.button("Generar Reportes (Ejecutivo y Técnico)", type="primary"):
+        if not api_key_input:
+            st.error("⚠️ Por favor ingresa tu API Key en la barra lateral para continuar.")
+        elif not archivo_xml:
+            st.warning("⚠️ Sube un archivo XML válido primero.")
+        else:
+            with st.spinner("Analizando infraestructura y redactando reportes con Inteligencia Artificial. Esto tomará un minuto..."):
+                contenido_xml = archivo_xml.read().decode('utf-8', errors='ignore')
+                r_sev, r_tip, madurez, hallazgos, obj, escaner = extraer_datos_universales(contenido_xml)
+                
+                if hallazgos:
+                    with tempfile.TemporaryDirectory() as tmpdir:
+                        p_sev = os.path.join(tmpdir, "sev.png")
+                        p_tip = os.path.join(tmpdir, "tip.png")
+                        p_rad = os.path.join(tmpdir, "rad.png")
+                        p_pdf_ejecutivo = os.path.join(tmpdir, "Ejecutivo.pdf")
+                        p_pdf_tecnico = os.path.join(tmpdir, "Tecnico.pdf")
                         
-                        titulo = f"[{riesgo_str.upper()}] {h.get('Vulnerabilidad', 'Desconocida')}"
-                        escribir_bloque_seguro(pdf_tec, titulo, width=80, alto_linea=6)
+                        # Generar Gráficas con bbox_inches='tight' para que NO salgan cortadas
+                        cliente = genai.Client(api_key=api_key_input)
+                        colores = {"Critical": '#8B0000', "High": '#D32F2F', "Medium": '#F57C00', "Low": '#FBC02D', "Informational": '#455A64'}
                         
-                        pdf_tec.set_font("helvetica", '', 10); pdf_tec.set_text_color(50, 50, 50)
-                        escribir_bloque_seguro(pdf_tec, h.get('Impacto', 'N/A'), width=95, alto_linea=5)
-                        pdf_tec.ln(5)
+                        plt.figure(figsize=(4.5, 3.5))
+                        plt.pie([v for v in r_sev.values() if v>0], labels=[k for k,v in r_sev.items() if v>0], colors=[colores.get(c, '#CCCCCC') for c in [k for k,v in r_sev.items() if v>0]], autopct='%1.1f%%', textprops={'fontsize':9, 'weight':'bold'})
+                        plt.gcf().gca().add_artist(plt.Circle((0,0),0.70,fc='white'))
+                        plt.savefig(p_sev, dpi=300, transparent=True, bbox_inches='tight') # <-- FIX
+                        plt.close()
                         
-                    pdf_tec.output(p_pdf_tecnico)
+                        plt.figure(figsize=(5, 3))
+                        plt.barh(list(r_tip.keys()), list(r_tip.values()), color='#388E3C')
+                        plt.gca().spines['top'].set_visible(False); plt.gca().spines['right'].set_visible(False)
+                        plt.savefig(p_tip, dpi=300, transparent=True, bbox_inches='tight') # <-- FIX
+                        plt.close()
 
-                    # Interfaz de Descarga
-                    st.success("✅ ¡Reportes Generados con Éxito!")
-                    
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        with open(p_pdf_ejecutivo, "rb") as file_ejec:
-                            st.download_button("📥 Descargar Visión CISO (Ejecutivo)", data=file_ejec, file_name=f"Reporte_Ejecutivo_{obj}.pdf", mime="application/pdf")
-                    with col2:
-                        with open(p_pdf_tecnico, "rb") as file_tec:
-                            st.download_button("📥 Descargar Visión Ingeniería (Técnico)", data=file_tec, file_name=f"Reporte_Tecnico_{obj}.pdf", mime="application/pdf")
+                        labels = np.array(list(madurez.keys())); stats = np.array(list(madurez.values()))
+                        angles = np.linspace(0, 2*np.pi, len(labels), endpoint=False)
+                        stats = np.concatenate((stats, [stats[0]])); angles = np.concatenate((angles, [angles[0]]))
+                        fig, ax = plt.subplots(figsize=(4.5, 4.5), subplot_kw=dict(polar=True))
+                        ax.fill(angles, stats, color='#388E3C', alpha=0.25); ax.plot(angles, stats, color='#388E3C', linewidth=2)
+                        ax.set_yticklabels([]); ax.set_xticks(angles[:-1]); ax.set_xticklabels(labels, fontsize=9, fontweight='bold', color='#2C3E50'); ax.set_ylim(0, 10)
+                        plt.savefig(p_rad, dpi=300, transparent=True, bbox_inches='tight') # <-- FIX
+                        plt.close()
 
-            else:
-                st.error("❌ No se encontraron vulnerabilidades válidas o el formato del XML no es compatible.")
+                        # IA Pipeline
+                        hallazgos_traducidos = traducir_inventario_json(hallazgos, cliente)
+                        ia_ejecutiva = analizar_ejecutivo_con_ia(hallazgos_traducidos, obj, escaner, cliente)
+                        ia_tecnica = analizar_tecnico_con_ia(hallazgos_traducidos, obj, escaner, cliente)
+                        
+                        # Ensamblar Ejecutivo (Coordenadas ajustadas)
+                        pdf_ejec = ReporteSigmac("logo_sigmac.jpg", "Auditoria Estrategica")
+                        pdf_ejec.add_page(); pdf_ejec.ln(40)
+                        if os.path.exists("logo_sigmac.jpg"): pdf_ejec.image("logo_sigmac.jpg", x=55, y=50, w=100)
+                        pdf_ejec.ln(60); pdf_ejec.set_font("helvetica", 'B', 24); pdf_ejec.set_text_color(44, 62, 80); pdf_ejec.cell(0, 15, text="AUDITORIA ESTRATEGICA 360", align='C', new_x="LMARGIN", new_y="NEXT")
+                        pdf_ejec.set_font("helvetica", '', 14); pdf_ejec.set_text_color(56, 142, 60); pdf_ejec.cell(0, 10, text=f"Motor: {escaner}", align='C', new_x="LMARGIN", new_y="NEXT"); pdf_ejec.ln(30)
+                        pdf_ejec.set_font("helvetica", 'B', 12); pdf_ejec.set_text_color(44, 62, 80); pdf_ejec.cell(0, 6, text=f"Objetivo: {obj}", align='C', new_x="LMARGIN", new_y="NEXT")
+                        pdf_ejec.set_font("helvetica", '', 12); pdf_ejec.cell(0, 6, text=f"Fecha: {datetime.now().strftime('%d de %B, %Y')}", align='C', new_x="LMARGIN", new_y="NEXT")
+
+                        pdf_ejec.add_page(); pdf_ejec.set_font("helvetica", 'B', 16); pdf_ejec.set_text_color(44, 62, 80); pdf_ejec.cell(0, 10, text="1. Dashboard de Madurez y Postura", new_x="LMARGIN", new_y="NEXT")
+                        y_actual = pdf_ejec.get_y()
+                        pdf_ejec.image(p_rad, x=10, y=y_actual, w=90) 
+                        pdf_ejec.image(p_sev, x=110, y=y_actual+5, w=85) # Ajuste X=110 para evitar encimarse
+                        pdf_ejec.set_y(y_actual + 90) # Bajar cursor
+                        pdf_ejec.image(p_tip, x=35, y=pdf_ejec.get_y(), w=140) # Centrado y más grande
+                        pdf_ejec.ln(80)
+                        
+                        pdf_ejec.add_page(); pdf_ejec.set_font("helvetica", 'B', 16); pdf_ejec.set_text_color(44, 62, 80); pdf_ejec.cell(0, 10, text="2. Analisis Directivo", new_x="LMARGIN", new_y="NEXT"); pdf_ejec.ln(5)
+                        pdf_ejec.set_font("helvetica", '', 11); pdf_ejec.set_text_color(50, 50, 50)
+                        pdf_ejec.multi_cell(0, 6, text=blindaje_fpdf(ia_ejecutiva), align='J') 
+                        pdf_ejec.output(p_pdf_ejecutivo)
+
+                        # Ensamblar Técnico (Coordenadas ajustadas)
+                        pdf_tec = ReporteSigmac("logo_sigmac.jpg", "Reporte Tecnico Detallado")
+                        pdf_tec.add_page(); pdf_tec.ln(40)
+                        if os.path.exists("logo_sigmac.jpg"): pdf_tec.image("logo_sigmac.jpg", x=55, y=50, w=100)
+                        pdf_tec.ln(60); pdf_tec.set_font("helvetica", 'B', 24); pdf_tec.set_text_color(44, 62, 80); pdf_tec.cell(0, 15, text="REPORTE TÉCNICO DE REMEDIACIÓN", align='C', new_x="LMARGIN", new_y="NEXT")
+                        pdf_tec.set_font("helvetica", '', 14); pdf_tec.set_text_color(56, 142, 60); pdf_tec.cell(0, 10, text=f"Guía de Bastionado y Hardening", align='C', new_x="LMARGIN", new_y="NEXT"); pdf_tec.ln(30)
+                        pdf_tec.set_font("helvetica", 'B', 12); pdf_tec.set_text_color(44, 62, 80); pdf_tec.cell(0, 6, text=f"Objetivo: {obj}", align='C', new_x="LMARGIN", new_y="NEXT")
+
+                        pdf_tec.add_page(); pdf_tec.set_font("helvetica", 'B', 16); pdf_tec.set_text_color(44, 62, 80); pdf_tec.cell(0, 10, text="1. Metricas Tecnicas y Distribucion", new_x="LMARGIN", new_y="NEXT"); pdf_tec.ln(5)
+                        y_actual = pdf_tec.get_y()
+                        pdf_tec.image(p_sev, x=10, y=y_actual, w=90)
+                        pdf_tec.image(p_tip, x=110, y=y_actual+5, w=90)
+                        pdf_tec.set_y(y_actual + 95)
+
+                        pdf_tec.add_page(); pdf_tec.set_font("helvetica", 'B', 16); pdf_tec.set_text_color(44, 62, 80); pdf_tec.cell(0, 10, text="2. Estrategia de Remediacion (IA)", new_x="LMARGIN", new_y="NEXT"); pdf_tec.ln(5)
+                        pdf_tec.set_font("helvetica", '', 11); pdf_tec.set_text_color(50, 50, 50)
+                        pdf_tec.multi_cell(0, 6, text=blindaje_fpdf(ia_tecnica), align='J')
+                        
+                        pdf_tec.add_page(); pdf_tec.set_font("helvetica", 'B', 16); pdf_tec.set_text_color(44, 62, 80); pdf_tec.cell(0, 10, text="3. Inventario Detallado de Vulnerabilidades", new_x="LMARGIN", new_y="NEXT"); pdf_tec.ln(5)
+                        
+                        orden_severidad = {"Critical": 1, "High": 2, "Medium": 3, "Low": 4, "Informational": 5}
+                        hallazgos_ordenados = sorted(hallazgos_traducidos, key=lambda x: orden_severidad.get(x.get("Riesgo", "Informational"), 6))
+                        
+                        for h in hallazgos_ordenados:
+                            pdf_tec.set_font("helvetica", 'B', 11)
+                            riesgo_str = h.get('Riesgo', 'Informational')
+                            if riesgo_str == 'Critical': pdf_tec.set_text_color(139, 0, 0)
+                            elif riesgo_str == 'High': pdf_tec.set_text_color(211, 47, 47)
+                            elif riesgo_str == 'Medium': pdf_tec.set_text_color(245, 124, 0)
+                            elif riesgo_str == 'Low': pdf_tec.set_text_color(251, 192, 45)
+                            else: pdf_tec.set_text_color(69, 90, 100)
+                            
+                            titulo = f"[{riesgo_str.upper()}] {h.get('Vulnerabilidad', 'Desconocida')}"
+                            escribir_bloque_seguro(pdf_tec, titulo, width=80, alto_linea=6)
+                            
+                            pdf_tec.set_font("helvetica", '', 10); pdf_tec.set_text_color(50, 50, 50)
+                            escribir_bloque_seguro(pdf_tec, h.get('Impacto', 'N/A'), width=95, alto_linea=5)
+                            pdf_tec.ln(5)
+                            
+                        pdf_tec.output(p_pdf_tecnico)
+
+                        # Guardar los PDFs en la memoria de sesión para no perderlos
+                        with open(p_pdf_ejecutivo, "rb") as f_ejec:
+                            st.session_state.pdf_ejecutivo = f_ejec.read()
+                        with open(p_pdf_tecnico, "rb") as f_tec:
+                            st.session_state.pdf_tecnico = f_tec.read()
+                        
+                        st.session_state.objetivo_nombre = obj
+                        st.session_state.analisis_completado = True
+                        st.rerun() # Refrescar la página para mostrar las descargas
+
+                else:
+                    st.error("❌ No se encontraron vulnerabilidades válidas o el formato del XML no es compatible.")
+
+# Mostrar los botones de descarga si el análisis ya terminó
+if st.session_state.analisis_completado:
+    st.success("✅ ¡Análisis completado! Tus reportes están listos.")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.download_button(
+            label="📥 Descargar Reporte Ejecutivo", 
+            data=st.session_state.pdf_ejecutivo, 
+            file_name=f"Ejecutivo_{st.session_state.objetivo_nombre}.pdf", 
+            mime="application/pdf",
+            use_container_width=True
+        )
+    with col2:
+        st.download_button(
+            label="📥 Descargar Reporte Técnico", 
+            data=st.session_state.pdf_tecnico, 
+            file_name=f"Tecnico_{st.session_state.objetivo_nombre}.pdf", 
+            mime="application/pdf",
+            use_container_width=True
+        )
