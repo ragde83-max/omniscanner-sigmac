@@ -41,7 +41,7 @@ with st.sidebar:
         st.rerun()
 
 # ==========================================
-# 3. FUNCIONES CORE Y BLINDAJE INTELIGENTE
+# 3. MOTOR UNIVERSAL Y BLINDAJE INTELIGENTE
 # ==========================================
 def limpiar_html(texto):
     if not texto: return "N/A"
@@ -50,6 +50,7 @@ def limpiar_html(texto):
     return re.sub(r'\s+', ' ', t).strip()
 
 def blindaje_fpdf(texto, truncar_log=False):
+    """Escudo de Nivel Titanio para FPDF con soporte multilinea"""
     if not texto: return "N/A"
     t = html.unescape(str(texto))
     t = re.sub(r'<[^>]+>', ' ', t)
@@ -57,9 +58,11 @@ def blindaje_fpdf(texto, truncar_log=False):
     t = str(t).replace('\r', '').replace('\t', ' ').replace('\xa0', ' ')
     t = re.sub(r'[-=_*#]{10,}', '---', t) 
     
+    # Límite de seguridad anti-volcados HTTP (ZAP/Burp)
     if truncar_log and len(t) > 1200: 
         t = t[:1197] + "...\n[DUMP TRUNCADO POR SEGURIDAD DE FORMATO]"
         
+    # Ruptura de cadenas largas para justificado perfecto
     t = re.sub(r'([^\s\n]{30})', r'\1 ', t) 
     
     lineas = t.split('\n')
@@ -74,6 +77,26 @@ def mapear_severidad(sev_cruda):
     elif sev in ['low', 'bajo', '1']: return 'Low'
     else: return 'Informational'
 
+def clasificar_y_guardar(sev_norm, nombre, impacto, r_riesgos, r_tipos, madurez, hallazgos):
+    """Clasificador centralizado para la matriz de madurez"""
+    r_riesgos[sev_norm] += 1
+    
+    if sev_norm in ["Critical", "High", "Medium", "Low"]:
+        nombre_low = str(nombre).lower()
+        if "disclosure" in nombre_low or "leak" in nombre_low or "info" in nombre_low:
+            tipo_es = "Fuga de Informacion"; madurez["Protección de Datos"] -= 1.5
+        elif "ssl" in nombre_low or "tls" in nombre_low or "cipher" in nombre_low or "certificate" in nombre_low or "crypt" in nombre_low:
+            tipo_es = "Criptografía Débil"; madurez["Criptografía"] -= 1.5
+        elif "outdated" in nombre_low or "version" in nombre_low or "obsolete" in nombre_low:
+            tipo_es = "Software Obsoleto"; madurez["Gestión de Parches"] -= 1.5
+        elif "hsts" in nombre_low or "header" in nombre_low or "cookie" in nombre_low or "csrf" in nombre_low or "clickjacking" in nombre_low or "cors" in nombre_low:
+            tipo_es = "Debilidad Perimetral"; madurez["Perímetro"] -= 1.0
+        else:
+            tipo_es = "Mala Configuracion"; madurez["Hardening"] -= 1.0
+        
+        r_tipos[tipo_es] = r_tipos.get(tipo_es, 0) + 1
+        hallazgos.append({"Riesgo": sev_norm, "Vulnerabilidad": limpiar_html(nombre), "Impacto": limpiar_html(impacto)})
+
 def extraer_datos_universales(xml_content):
     resumen_riesgos = {"Critical": 0, "High": 0, "Medium": 0, "Low": 0, "Informational": 0}
     resumen_tipos = {}
@@ -86,76 +109,72 @@ def extraer_datos_universales(xml_content):
         root = ET.fromstring(xml_content)
         root_tag = root.tag.lower()
 
+        # --- FASE 1: DETECCIÓN DE MOTOR ---
         if 'nessus' in root_tag: escaner = "Nessus"
         elif 'owaspzapreport' in root_tag: escaner = "OWASP ZAP"
+        elif 'issues' in root_tag: escaner = "Burp Suite"
         elif 'report' in root_tag and root.find('.//result') is not None: escaner = "OpenVAS"
         elif 'scangroup' in root_tag or 'scan' in root_tag: escaner = "Invicti/Acunetix"
         elif 'xmlreport' in root_tag: escaner = "HCL AppScan"
         elif 'cxxmlresults' in root_tag: escaner = "Checkmarx"
 
+        # Extracción Objetivo
         start_url = root.find('.//StartURL')
         host_tag = root.find('.//ReportHost')
         site_tag = root.find('.//site')
+        burp_host = root.find('.//host')
 
         if start_url is not None and start_url.text: objetivo = start_url.text
         elif host_tag is not None: objetivo = host_tag.get('name', 'Host')
         elif site_tag is not None: objetivo = site_tag.get('name', 'Host')
+        elif burp_host is not None and burp_host.text: objetivo = burp_host.text
 
-        items = root.findall('.//ReportItem') + root.findall('.//alertitem')
+        # --- FASE 2: ENRUTAMIENTO MODULAR ---
+        if escaner == "OWASP ZAP":
+            for item in root.findall('.//alertitem'):
+                sev_tag = item.find('riskcode')
+                sev_val = sev_tag.text if sev_tag is not None else '0'
+                sev_norm = 'Informational' if str(sev_val) == '0' else mapear_severidad(sev_val)
+                nombre_tag = item.find('alert')
+                nombre = nombre_tag.text if nombre_tag is not None else 'Hallazgo'
+                impacto_tag = item.find('desc')
+                impacto = impacto_tag.text if impacto_tag is not None else "Sin detalles."
+                clasificar_y_guardar(sev_norm, nombre, impacto, resumen_riesgos, resumen_tipos, madurez, hallazgos_crudos)
 
-        for item in items:
-            sev_tag = item.find('Severity')
-            if sev_tag is None: sev_tag = item.find('riskcode')
-            if sev_tag is None: sev_tag = item.get('severity')
-            
-            if sev_tag is None: continue
-            
-            sev_val = sev_tag.text if hasattr(sev_tag, 'text') else sev_tag
-            
-            if str(sev_val) == '0': 
-                sev_norm = 'Informational'
-            else: 
+        elif escaner == "Burp Suite":
+            for item in root.findall('.//issue'):
+                sev_tag = item.find('severity')
+                sev_val = sev_tag.text if sev_tag is not None else 'Information'
                 sev_norm = mapear_severidad(sev_val)
-                
-            resumen_riesgos[sev_norm] += 1
-            
-            if sev_norm in ["Critical", "High", "Medium", "Low"]:
+                nombre_tag = item.find('name')
+                nombre = nombre_tag.text if nombre_tag is not None else 'Hallazgo'
+                impacto_bg = item.find('issueBackground')
+                impacto_dt = item.find('issueDetail')
+                impacto = impacto_bg.text if impacto_bg is not None else (impacto_dt.text if impacto_dt is not None else "Sin detalles.")
+                clasificar_y_guardar(sev_norm, nombre, impacto, resumen_riesgos, resumen_tipos, madurez, hallazgos_crudos)
+
+        else: 
+            # Familia Comercial (Nessus, Acunetix, etc)
+            for item in root.findall('.//ReportItem'):
+                sev_tag = item.find('Severity')
+                if sev_tag is None: sev_tag = item.get('severity')
+                sev_val = sev_tag.text if hasattr(sev_tag, 'text') else sev_tag
+                if sev_val is None: continue
+                sev_norm = mapear_severidad(sev_val)
                 nombre_tag = item.find('Name')
-                if nombre_tag is None: nombre_tag = item.find('name')
-                if nombre_tag is None: nombre_tag = item.find('alert')
-                
                 nombre = nombre_tag.text if nombre_tag is not None else item.get('pluginName', 'Hallazgo')
-                
                 impacto_tag = item.find('Impact')
-                if impacto_tag is None: impacto_tag = item.find('desc')
-                
-                impacto = impacto_tag.text if impacto_tag is not None else "Detalles técnicos no especificados."
-                
-                tipo_tag = item.find('Type')
-                tipo_raw = (tipo_tag.text if tipo_tag is not None else '').lower()
-                nombre_low = str(nombre).lower()
-                
-                if "disclosure" in tipo_raw or "leak" in nombre_low or "info" in nombre_low or "disclosure" in nombre_low:
-                    tipo_es = "Fuga de Informacion"; madurez["Protección de Datos"] -= 1.5
-                elif "ssl" in nombre_low or "tls" in nombre_low or "cipher" in nombre_low or "certificate" in nombre_low or "crypt" in nombre_low:
-                    tipo_es = "Criptografía Débil"; madurez["Criptografía"] -= 1.5
-                elif "outdated" in nombre_low or "version" in nombre_low or "obsolete" in nombre_low:
-                    tipo_es = "Software Obsoleto"; madurez["Gestión de Parches"] -= 1.5
-                elif "hsts" in nombre_low or "header" in nombre_low or "cookie" in nombre_low or "csrf" in nombre_low or "clickjacking" in nombre_low or "cors" in nombre_low:
-                    tipo_es = "Debilidad Perimetral"; madurez["Perímetro"] -= 1.0
-                else:
-                    tipo_es = "Mala Configuracion"; madurez["Hardening"] -= 1.0
-                
-                resumen_tipos[tipo_es] = resumen_tipos.get(tipo_es, 0) + 1
-                hallazgos_crudos.append({"Riesgo": sev_norm, "Vulnerabilidad": limpiar_html(nombre), "Impacto": limpiar_html(impacto)})
-        
+                impacto = impacto_tag.text if impacto_tag is not None else "Sin detalles."
+                clasificar_y_guardar(sev_norm, nombre, impacto, resumen_riesgos, resumen_tipos, madurez, hallazgos_crudos)
+
         for k in madurez: madurez[k] = max(0, madurez[k])
         return resumen_riesgos, resumen_tipos, madurez, hallazgos_crudos, objetivo, escaner
+        
     except Exception as e:
         return None, None, None, None, None, None
 
 # ==========================================
-# 4. ANÁLISIS IA Y TRADUCCIÓN
+# 4. GRÁFICAS Y ANÁLISIS IA
 # ==========================================
 def traducir_inventario_json(hallazgos, cliente):
     hallazgos_top = hallazgos[:25]
@@ -173,14 +192,14 @@ def analizar_ejecutivo_con_ia(hallazgos, objetivo, escaner, cliente):
     datos_texto = "\n".join([f"- [{h.get('Riesgo', '')}] {h.get('Vulnerabilidad', '')}" for h in hallazgos[:15]])
     prompt = f"""Actúa como el CISO de Sigmac Corp. Redacta un análisis ejecutivo profundo, objetivo y de nivel corporativo sobre: {objetivo}. Escáner: {escaner}. Vulnerabilidades: {datos_texto}.
     REGLAS ESTRICTAS: 
-    1. NO uses formato de carta. PROHIBIDO usar saludos (ej. "Estimados") o despedidas (ej. "Atentamente"). Es un informe oficial.
-    2. Debe ser un documento detallado, analítico y extenso (mínimo 450 palabras), pero manteniendo un tono impersonal de consultoría.
+    1. NO uses formato de carta. PROHIBIDO usar saludos o despedidas. Es un informe oficial.
+    2. Debe ser un documento detallado, analítico y extenso (mínimo 450 palabras), manteniendo un tono impersonal de consultoría.
     3. NO uses Markdown (ni asteriscos, ni negritas, ni #).
-    4. Usa múltiples saltos de línea (ENTER) para separar los párrafos y evitar bloques de texto saturados.
+    4. Usa múltiples saltos de línea (ENTER) para separar los párrafos y evitar bloques saturados.
     ESTRUCTURA OBLIGATORIA (Separa cada sección con doble salto de línea):
-    RESUMEN EJECUTIVO: (Desarrolla el impacto de negocio y el nivel de riesgo de forma exhaustiva en 2 o 3 párrafos).
-    CAUSA RAIZ OPERATIVA: (Analiza detalladamente las fallas estructurales en los procesos de TI en 2 párrafos).
-    PLAN DE ACCION ESTRATEGICO: (Desarrolla 3 pasos gerenciales enumerados, explicando a profundidad el 'cómo' y el 'por qué' de cada acción para justificar la inversión)."""
+    RESUMEN EJECUTIVO: (Desarrolla el impacto de negocio y riesgo en 2 o 3 párrafos).
+    CAUSA RAIZ OPERATIVA: (Analiza fallas estructurales en TI en 2 párrafos).
+    PLAN DE ACCION ESTRATEGICO: (Desarrolla 3 pasos gerenciales enumerados, explicando 'cómo' y 'por qué')."""
     try: return cliente.models.generate_content(model='gemini-2.5-flash', contents=prompt).text.replace('*', '').replace('#', '').replace('$', '')
     except: return "Análisis ejecutivo no disponible."
 
@@ -188,9 +207,9 @@ def analizar_tecnico_con_ia(hallazgos, objetivo, escaner, cliente):
     datos_texto = "\n".join([f"- [{h.get('Riesgo', '')}] {h.get('Vulnerabilidad', '')}: {h.get('Impacto', '')}" for h in hallazgos[:15]])
     prompt = f"""Actúa como Arquitecto DevSecOps de Sigmac Corp. Escribe una guía técnica de remediación directa sobre: {objetivo}. Escáner: {escaner}. Detalles: {datos_texto}.
     REGLAS ESTRICTAS: 
-    1. NO uses formato de carta, correo o mensaje. PROHIBIDO usar saludos o despedidas. Debe ser impersonal.
+    1. NO uses formato de carta o correo. PROHIBIDO usar saludos o despedidas. Impersonal.
     2. NO uses Markdown (ni asteriscos, ni negritas).
-    3. Usa múltiples saltos de línea (ENTER) para separar los párrafos. Lenguaje puramente técnico y conciso.
+    3. Usa múltiples saltos de línea (ENTER) para separar párrafos. Lenguaje puramente técnico.
     ESTRUCTURA OBLIGATORIA:
     EVALUACION TECNICA: (Diagnóstico técnico directo en 1 o 2 párrafos).
     VECTORES DE ATAQUE: (Explica los riesgos técnicos concretos).
@@ -226,7 +245,7 @@ class ReporteSigmac(FPDF):
 # ==========================================
 if not st.session_state.analisis_completado:
     st.markdown("### 1. Carga de Datos")
-    archivo_xml = st.file_uploader("Sube el archivo XML del escáner (Nessus, Invicti, OpenVAS, ZAP, Checkmarx)", type=["xml"])
+    archivo_xml = st.file_uploader("Sube el archivo XML del escáner (Nessus, Invicti, ZAP, Burp, Checkmarx)", type=["xml"])
 
     if st.button("Generar Reportes (Ejecutivo y Técnico)", type="primary"):
         if not api_key_input:
@@ -234,7 +253,7 @@ if not st.session_state.analisis_completado:
         elif not archivo_xml:
             st.warning("⚠️ Sube un archivo XML válido primero.")
         else:
-            with st.spinner("Analizando infraestructura y redactando reportes con Inteligencia Artificial. Esto tomará un minuto..."):
+            with st.spinner("Analizando infraestructura y redactando reportes con Inteligencia Artificial. Esto tomará un par de minutos..."):
                 contenido_xml = archivo_xml.read().decode('utf-8', errors='ignore')
                 r_sev, r_tip, madurez, hallazgos, obj, escaner = extraer_datos_universales(contenido_xml)
                 
