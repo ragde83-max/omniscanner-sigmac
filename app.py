@@ -27,7 +27,7 @@ if os.path.exists("logo_sigmac.jpg"):
     st.image("logo_sigmac.jpg", width=200) 
     
 st.title("🛡️ Plataforma de Auditoría CISO")
-st.markdown("Motor de análisis de vulnerabilidades impulsado por Inteligencia Artificial para **Sigmac Corp**.")
+st.markdown("Motor de consolidación Multi-Escáner impulsado por IA para **Sigmac Corp**.")
 
 # ==========================================
 # 2. BARRA LATERAL (SEGURIDAD)
@@ -35,7 +35,7 @@ st.markdown("Motor de análisis de vulnerabilidades impulsado por Inteligencia A
 with st.sidebar:
     st.header("⚙️ Configuración del Motor")
     api_key_input = st.text_input("Ingresa tu API Key de Gemini:", type="password")
-    st.info("🔒 La API Key no se guarda en ningún servidor. Se utiliza de forma temporal en la memoria durante esta sesión.")
+    st.info("🔒 La API Key no se guarda en ningún servidor. Se utiliza temporalmente durante esta sesión.")
     
     if st.button("🔄 Nuevo Análisis"):
         st.session_state.analisis_completado = False
@@ -100,10 +100,15 @@ def extraer_datos_xml(xml_content):
     escaner = "Desconocido"
     
     try:
+        # Sanitización estricta contra atributos fantasma (Ej. Wapiti)
+        xml_content = re.sub(r'\bxsi:[a-zA-Z0-9_]+="[^"]*"', '', xml_content)
+        
         root = ET.fromstring(xml_content)
         root_tag = root.tag.lower()
 
-        if 'nessus' in root_tag: escaner = "Nessus"
+        wapiti_gen = root.find('.//info[@name="generatorName"]')
+        if wapiti_gen is not None and 'wapiti' in str(wapiti_gen.text).lower(): escaner = "Wapiti"
+        elif 'nessus' in root_tag: escaner = "Nessus"
         elif 'owaspzapreport' in root_tag: escaner = "OWASP ZAP"
         elif 'issues' in root_tag: escaner = "Burp Suite"
         elif 'report' in root_tag and root.find('.//result') is not None: escaner = "OpenVAS"
@@ -115,13 +120,30 @@ def extraer_datos_xml(xml_content):
         host_tag = root.find('.//ReportHost')
         site_tag = root.find('.//site')
         burp_host = root.find('.//host')
+        wapiti_target = root.find('.//info[@name="target"]')
 
         if start_url is not None and start_url.text: objetivo = start_url.text
         elif host_tag is not None: objetivo = host_tag.get('name', 'Host')
         elif site_tag is not None: objetivo = site_tag.get('name', 'Host')
         elif burp_host is not None and burp_host.text: objetivo = burp_host.text
+        elif wapiti_target is not None and wapiti_target.text: objetivo = wapiti_target.text
 
-        if escaner == "OWASP ZAP":
+        if escaner == "Wapiti":
+            for item in root.findall('.//vulnerability'):
+                nombre = item.get('name', 'Hallazgo Wapiti')
+                level_tag = item.find('.//level')
+                if level_tag is not None and level_tag.text:
+                    sev_val = level_tag.text
+                else:
+                    n_lower = nombre.lower()
+                    if 'sql' in n_lower or 'xss' in n_lower or 'injection' in n_lower or 'exec' in n_lower: sev_val = 'High'
+                    elif 'backup' in n_lower or 'disclosure' in n_lower or 'info' in n_lower: sev_val = 'Medium'
+                    else: sev_val = 'Low'
+                sev_norm = mapear_severidad(sev_val)
+                impacto_tag = item.find('description')
+                clasificar_y_guardar(sev_norm, nombre, impacto_tag.text if impacto_tag is not None else "Sin detalles.", resumen_riesgos, resumen_tipos, hallazgos_crudos)
+
+        elif escaner == "OWASP ZAP":
             for item in root.findall('.//alertitem'):
                 sev_tag = item.find('riskcode')
                 sev_val = sev_tag.text if sev_tag is not None else '0'
@@ -175,7 +197,7 @@ def consolidar_reportes(archivos_cargados):
             objetivo_normalizado_maestro = obj_norm
             objetivo_maestro = obj
         elif objetivo_normalizado_maestro != obj_norm and obj_norm != "desconocido":
-            st.warning(f"⚠️ Conflicto de objetivos: {nombre_archivo} parece ser de otro servidor. Se omitirá para no mezclar datos.")
+            st.warning(f"⚠️ Conflicto de objetivos: {nombre_archivo} escaneó '{obj_norm}', difiere de '{objetivo_normalizado_maestro}'. Se omitirá.")
             continue
 
         escaneres_detectados.add(escaner)
@@ -215,7 +237,7 @@ def traducir_inventario_json(hallazgos, cliente):
 
 def analizar_ejecutivo_con_ia(hallazgos, objetivo, escaneres_lista, cliente):
     datos_texto = "\n".join([f"- [{h.get('Riesgo', '')}] {h.get('Vulnerabilidad', '')}" for h in hallazgos[:15]])
-    escaneres_str = ", ".join(escaneres_lista)
+    escaneres_str = " + ".join(escaneres_lista)
     
     prompt = f"""Actúa como el CISO de Sigmac Corp. Redacta un análisis ejecutivo maestro, combinando resultados de múltiples herramientas. Objetivo: {objetivo}. Escáneres combinados: {escaneres_str}. Principales vulnerabilidades detectadas: {datos_texto}.
     REGLAS ESTRICTAS: 
@@ -231,7 +253,7 @@ def analizar_ejecutivo_con_ia(hallazgos, objetivo, escaneres_lista, cliente):
 
 def analizar_tecnico_con_ia(hallazgos, objetivo, escaneres_lista, cliente):
     datos_texto = "\n".join([f"- [{h.get('Riesgo', '')}] {h.get('Vulnerabilidad', '')}: {h.get('Impacto', '')}" for h in hallazgos[:15]])
-    escaneres_str = ", ".join(escaneres_lista)
+    escaneres_str = " + ".join(escaneres_lista)
     
     prompt = f"""Actúa como Arquitecto DevSecOps de Sigmac Corp. Escribe una guía técnica maestra de remediación. Objetivo: {objetivo}. Escáneres de origen: {escaneres_str}. Detalles combinados: {datos_texto}.
     REGLAS ESTRICTAS: 
@@ -326,8 +348,7 @@ def generar_pdf_maestro(titulo, img_sev, img_tip, img_radar, analisis_ia, hallaz
 # ==========================================
 if not st.session_state.analisis_completado:
     st.markdown("### 1. Carga de Datos Consolidada")
-    # 👉 EL CAMBIO CLAVE ESTÁ AQUÍ: accept_multiple_files=True
-    archivos_xml = st.file_uploader("Sube uno o MÚLTIPLES archivos XML del mismo servidor (Nessus, ZAP, Burp, etc.)", type=["xml"], accept_multiple_files=True)
+    archivos_xml = st.file_uploader("Sube uno o MÚLTIPLES archivos XML del mismo servidor (Nessus, ZAP, Burp, Wapiti, etc.)", type=["xml"], accept_multiple_files=True)
 
     if st.button("Generar Súper Reportes", type="primary"):
         if not api_key_input:
@@ -336,7 +357,6 @@ if not st.session_state.analisis_completado:
             st.warning("⚠️ Sube al menos un archivo XML válido primero.")
         else:
             with st.spinner(f"Analizando {len(archivos_xml)} archivo(s) y consolidando reportes maestros. Esto tomará un par de minutos..."):
-                # Convertimos los archivos de Streamlit al formato que entiende nuestra función
                 archivos_cargados = {f.name: f.getvalue() for f in archivos_xml}
                 
                 resultado_consolidado = consolidar_reportes(archivos_cargados)
