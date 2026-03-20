@@ -6,8 +6,8 @@ from fpdf import FPDF
 import os
 import re
 import json
-import html
 import time
+import html
 from urllib.parse import urlparse
 from datetime import datetime
 from google import genai
@@ -43,7 +43,7 @@ with st.sidebar:
         st.rerun()
 
 # ==========================================
-# 3. FUNCIONES CORE Y BLINDAJE
+# 3. FUNCIONES CORE, BLINDAJE Y DESARMADOR
 # ==========================================
 def limpiar_html(texto):
     if not texto: return "N/A"
@@ -63,6 +63,14 @@ def blindaje_fpdf(texto, truncar_log=False):
     lineas = t.split('\n')
     lineas_limpias = [re.sub(r' +', ' ', linea).strip() for linea in lineas]
     return '\n'.join(lineas_limpias).encode('latin-1', 'replace').decode('latin-1')
+
+def desarmar_payloads(texto):
+    """🔥 NEUTRALIZA CÓDIGO MALICIOSO PARA QUE LA API DE GOOGLE NO LO BLOQUEE"""
+    if not texto: return ""
+    t = str(texto)
+    t = t.replace('<', '【').replace('>', '】') # Desarma etiquetas HTML/JS
+    t = re.sub(r'(?i)(alert\(|prompt\(|confirm\(|eval\()', 'alerta_bloqueada(', t)
+    return t
 
 def mapear_severidad(sev_cruda):
     sev = str(sev_cruda).strip().lower()
@@ -91,7 +99,7 @@ def limpiar_ruta(ruta_cruda, objetivo):
     return ruta
 
 # ==========================================
-# 4. MOTOR DE EXTRACCIÓN MODULAR Y RUTAS
+# 4. MOTOR DE EXTRACCIÓN MODULAR Y DE RUTAS
 # ==========================================
 def clasificar_y_guardar(sev_norm, nombre, impacto, ruta, r_riesgos, r_tipos, hallazgos):
     r_riesgos[sev_norm] += 1
@@ -128,7 +136,6 @@ def extraer_ruta_dinamica(item, escaner):
         if path is not None and path.text: return path.text
         if loc is not None and loc.text: return loc.text
     
-    # Búsqueda de respaldo universal profunda
     for etiqueta in ['uri', 'url', 'path', 'location', 'Affects']:
         nodo = item.find(f'.//{etiqueta}')
         if nodo is not None and nodo.text and len(str(nodo.text).strip()) > 1:
@@ -241,7 +248,7 @@ def consolidar_reportes(archivos_cargados):
             objetivo_normalizado_maestro = obj_norm
             objetivo_maestro = obj
         elif objetivo_normalizado_maestro != obj_norm and obj_norm != "desconocido":
-            st.warning(f"⚠️ Conflicto detectado: {nombre_archivo} escaneó '{obj_norm}', difiere del principal '{objetivo_normalizado_maestro}'. Se ha excluido por seguridad.")
+            st.warning(f"⚠️ Conflicto detectado en {nombre_archivo}. Difiere del servidor principal. Archivo excluido por seguridad.")
             continue
 
         escaneres_detectados.add(escaner)
@@ -280,7 +287,7 @@ def traducir_inventario_json(hallazgos, cliente):
     except: return hallazgos_top
 
 def analizar_ejecutivo_con_ia(hallazgos, objetivo, escaneres_lista, cliente):
-    datos_texto = "\n".join([f"- [{h.get('Riesgo', '')}] {h.get('Vulnerabilidad', '')}" for h in hallazgos[:15]])
+    datos_texto = "\n".join([f"- [{h.get('Riesgo', '')}] {desarmar_payloads(h.get('Vulnerabilidad', ''))}" for h in hallazgos[:15]])
     escaneres_str = " + ".join(escaneres_lista)
     
     prompt = f"""Actúa como el CISO de Sigmac Corp. Redacta un análisis ejecutivo maestro, combinando resultados de múltiples herramientas. Objetivo: {objetivo}. Escáneres combinados: {escaneres_str}. Principales vulnerabilidades detectadas: {datos_texto}.
@@ -293,13 +300,16 @@ def analizar_ejecutivo_con_ia(hallazgos, objetivo, escaneres_lista, cliente):
     CAUSA RAIZ OPERATIVA: (Analiza fallas estructurales en TI en 2 párrafos).
     PLAN DE ACCION ESTRATEGICO: (Desarrolla 3 pasos gerenciales enumerados)."""
     try: return cliente.models.generate_content(model='gemini-2.5-flash', contents=prompt).text.replace('*', '').replace('#', '').replace('$', '')
-    except: return "Análisis maestro no disponible."
+    except Exception as e: return f"Análisis ejecutivo maestro no disponible. (Error IA: {e})"
 
 def analizar_tecnico_con_ia(hallazgos, objetivo, escaneres_lista, cliente):
     datos_texto_lista = []
     for h in hallazgos[:15]:
         impacto_limpio = str(h.get('Impacto', ''))[:250] + "..." if len(str(h.get('Impacto', ''))) > 250 else str(h.get('Impacto', ''))
-        datos_texto_lista.append(f"- [{h.get('Riesgo', '')}] {h.get('Vulnerabilidad', '')} en la ruta {h.get('Ruta', 'Global')}: {impacto_limpio}")
+        impacto_desarmado = desarmar_payloads(impacto_limpio)
+        vuln_desarmada = desarmar_payloads(h.get('Vulnerabilidad', ''))
+        
+        datos_texto_lista.append(f"- [{h.get('Riesgo', '')}] {vuln_desarmada} en la ruta {h.get('Ruta', 'Global')}: {impacto_desarmado}")
     
     datos_texto = "\n".join(datos_texto_lista)
     escaneres_str = " + ".join(escaneres_lista)
@@ -313,7 +323,7 @@ def analizar_tecnico_con_ia(hallazgos, objetivo, escaneres_lista, cliente):
     VECTORES DE ATAQUE COMBINADOS: (Riesgos técnicos).
     GUIA DE REMEDIACION MAESTRA: (3 pasos técnicos detallados)."""
     try: return cliente.models.generate_content(model='gemini-2.5-flash', contents=prompt).text.replace('*', '').replace('#', '').replace('$', '')
-    except: return "Análisis técnico maestro no disponible."
+    except Exception as e: return f"Análisis técnico maestro no disponible. (Error IA: {e})"
 
 # ==========================================
 # 7. CLASE PDF
@@ -405,7 +415,7 @@ def generar_pdf_maestro(titulo, img_sev, img_tip, img_radar, analisis_ia, hallaz
 # ==========================================
 if not st.session_state.analisis_completado:
     st.markdown("### 1. Carga de Datos Consolidada")
-    archivos_xml = st.file_uploader("Sube uno o MÚLTIPLES archivos XML del mismo servidor (Nessus, ZAP, Burp, Wapiti, Acunetix)", type=["xml"], accept_multiple_files=True)
+    archivos_xml = st.file_uploader("Sube uno o MÚLTIPLES archivos XML del mismo servidor (ZAP, Burp, Wapiti, Acunetix, etc.)", type=["xml"], accept_multiple_files=True)
 
     if st.button("Generar Súper Reportes", type="primary"):
         if not api_key_input:
@@ -452,16 +462,16 @@ if not st.session_state.analisis_completado:
                             ax.set_yticklabels([]); ax.set_xticks(angles[:-1]); ax.set_xticklabels(labels, fontsize=9, fontweight='bold', color='#2C3E50'); ax.set_ylim(0, 10)
                             plt.savefig(p_rad, dpi=300, transparent=True, bbox_inches='tight'); plt.close()
 
-                            # IA Pipeline Master con pausas para evitar bloqueos
-                            st.info("🧠 Traducción en proceso...")
+                            # IA Pipeline Master con pausas protectoras
+                            st.info("🌐 Traduciendo hallazgos...")
                             hallazgos_traducidos = traducir_inventario_json(hallazgos, cliente)
                             time.sleep(3)
                             
-                            st.info("🧠 Redactando Análisis Ejecutivo...")
+                            st.info("🧠 Redactando Análisis Ejecutivo C-Level...")
                             ia_ejecutiva = analizar_ejecutivo_con_ia(hallazgos_traducidos, obj, esc_lista, cliente)
                             time.sleep(3)
                             
-                            st.info("🧠 Redactando Guía Técnica...")
+                            st.info("🧠 Redactando Guía Técnica Maestra...")
                             ia_tecnica = analizar_tecnico_con_ia(hallazgos_traducidos, obj, esc_lista, cliente)
                             
                             # Ensamblaje
