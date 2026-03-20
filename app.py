@@ -7,6 +7,7 @@ import os
 import re
 import json
 import html
+import time
 from urllib.parse import urlparse
 from datetime import datetime
 from google import genai
@@ -76,10 +77,23 @@ def normalizar_objetivo(url):
     if not url.startswith('http'): url = 'http://' + url
     return urlparse(url).netloc.split(':')[0] 
 
+def limpiar_ruta(ruta_cruda, objetivo):
+    if not ruta_cruda or ruta_cruda == "N/A": return "Global"
+    ruta = str(ruta_cruda).strip()
+    ruta_lower = ruta.lower()
+    if any(x in ruta_lower for x in ["owasp.org", "mitre.org", "cve", "w3.org", "tools.ietf.org"]): return "Global"
+    if ruta_lower.startswith("http"):
+        try:
+            dominio_ruta = urlparse(ruta).netloc.split(':')[0]
+            dominio_obj = normalizar_objetivo(objetivo)
+            if dominio_ruta and dominio_obj and dominio_ruta != dominio_obj: return "Global" 
+        except: pass
+    return ruta
+
 # ==========================================
-# 4. MOTOR DE EXTRACCIÓN MODULAR
+# 4. MOTOR DE EXTRACCIÓN MODULAR Y RUTAS
 # ==========================================
-def clasificar_y_guardar(sev_norm, nombre, impacto, r_riesgos, r_tipos, hallazgos):
+def clasificar_y_guardar(sev_norm, nombre, impacto, ruta, r_riesgos, r_tipos, hallazgos):
     r_riesgos[sev_norm] += 1
     if sev_norm in ["Critical", "High", "Medium", "Low"]:
         nombre_low = str(nombre).lower()
@@ -88,9 +102,38 @@ def clasificar_y_guardar(sev_norm, nombre, impacto, r_riesgos, r_tipos, hallazgo
         elif "outdated" in nombre_low or "version" in nombre_low or "obsolete" in nombre_low: tipo_es = "Software Obsoleto"
         elif "hsts" in nombre_low or "header" in nombre_low or "cookie" in nombre_low or "csrf" in nombre_low or "clickjacking" in nombre_low or "cors" in nombre_low: tipo_es = "Debilidad Perimetral"
         else: tipo_es = "Mala Configuracion"
-        
         r_tipos[tipo_es] = r_tipos.get(tipo_es, 0) + 1
-        hallazgos.append({"Riesgo": sev_norm, "Vulnerabilidad": limpiar_html(nombre), "Impacto": limpiar_html(impacto)})
+        
+        hallazgos.append({
+            "Riesgo": sev_norm, 
+            "Vulnerabilidad": limpiar_html(nombre), 
+            "Impacto": limpiar_html(impacto),
+            "Ruta": limpiar_html(ruta)
+        })
+
+def extraer_ruta_dinamica(item, escaner):
+    """🔍 Sabueso Maestro: Extrae la ruta exacta dependiendo del XML del escáner"""
+    if escaner == "Acunetix":
+        af = item.find('.//Affects')
+        if af is not None and af.text: return af.text
+    elif escaner == "Wapiti":
+        path = item.find('.//entries/entry/path')
+        if path is not None and path.text: return path.text
+    elif escaner == "OWASP ZAP":
+        uri = item.find('.//instances/instance/uri')
+        if uri is not None and uri.text: return uri.text
+    elif escaner == "Burp Suite":
+        path = item.find('path')
+        loc = item.find('location')
+        if path is not None and path.text: return path.text
+        if loc is not None and loc.text: return loc.text
+    
+    # Búsqueda de respaldo universal profunda
+    for etiqueta in ['uri', 'url', 'path', 'location', 'Affects']:
+        nodo = item.find(f'.//{etiqueta}')
+        if nodo is not None and nodo.text and len(str(nodo.text).strip()) > 1:
+            return str(nodo.text).strip()
+    return ""
 
 def extraer_datos_xml(xml_content):
     resumen_riesgos = {"Critical": 0, "High": 0, "Medium": 0, "Low": 0, "Informational": 0}
@@ -100,9 +143,7 @@ def extraer_datos_xml(xml_content):
     escaner = "Desconocido"
     
     try:
-        # Sanitización estricta contra atributos fantasma (Ej. Wapiti)
         xml_content = re.sub(r'\bxsi:[a-zA-Z0-9_]+="[^"]*"', '', xml_content)
-        
         root = ET.fromstring(xml_content)
         root_tag = root.tag.lower()
 
@@ -111,10 +152,8 @@ def extraer_datos_xml(xml_content):
         elif 'nessus' in root_tag: escaner = "Nessus"
         elif 'owaspzapreport' in root_tag: escaner = "OWASP ZAP"
         elif 'issues' in root_tag: escaner = "Burp Suite"
-        elif 'report' in root_tag and root.find('.//result') is not None: escaner = "OpenVAS"
-        elif 'scangroup' in root_tag or 'scan' in root_tag: escaner = "Invicti/Acunetix"
-        elif 'xmlreport' in root_tag: escaner = "HCL AppScan"
-        elif 'cxxmlresults' in root_tag: escaner = "Checkmarx"
+        elif 'scangroup' in root_tag or 'scan' in root_tag: escaner = "Acunetix"
+        else: escaner = "Otro Escáner"
 
         start_url = root.find('.//StartURL')
         host_tag = root.find('.//ReportHost')
@@ -132,34 +171,34 @@ def extraer_datos_xml(xml_content):
             for item in root.findall('.//vulnerability'):
                 nombre = item.get('name', 'Hallazgo Wapiti')
                 level_tag = item.find('.//level')
-                if level_tag is not None and level_tag.text:
-                    sev_val = level_tag.text
-                else:
-                    n_lower = nombre.lower()
-                    if 'sql' in n_lower or 'xss' in n_lower or 'injection' in n_lower or 'exec' in n_lower: sev_val = 'High'
-                    elif 'backup' in n_lower or 'disclosure' in n_lower or 'info' in n_lower: sev_val = 'Medium'
-                    else: sev_val = 'Low'
+                if level_tag is not None and level_tag.text: sev_val = level_tag.text
+                else: sev_val = 'High' if any(x in nombre.lower() for x in ['sql', 'xss', 'injection', 'exec']) else 'Medium'
                 sev_norm = mapear_severidad(sev_val)
                 impacto_tag = item.find('description')
-                clasificar_y_guardar(sev_norm, nombre, impacto_tag.text if impacto_tag is not None else "Sin detalles.", resumen_riesgos, resumen_tipos, hallazgos_crudos)
+                
+                ruta_limpia = limpiar_ruta(extraer_ruta_dinamica(item, escaner), objetivo)
+                clasificar_y_guardar(sev_norm, nombre, impacto_tag.text if impacto_tag is not None else "Sin detalles.", ruta_limpia, resumen_riesgos, resumen_tipos, hallazgos_crudos)
 
         elif escaner == "OWASP ZAP":
             for item in root.findall('.//alertitem'):
                 sev_tag = item.find('riskcode')
-                sev_val = sev_tag.text if sev_tag is not None else '0'
-                sev_norm = 'Informational' if str(sev_val) == '0' else mapear_severidad(sev_val)
+                sev_norm = 'Informational' if (sev_tag is not None and str(sev_tag.text) == '0') else mapear_severidad(sev_tag.text if sev_tag is not None else '0')
                 nombre_tag = item.find('alert')
-                clasificar_y_guardar(sev_norm, nombre_tag.text if nombre_tag is not None else 'Hallazgo', (item.find('desc').text if item.find('desc') is not None else ""), resumen_riesgos, resumen_tipos, hallazgos_crudos)
+                impacto_tag = item.find('desc')
+                
+                ruta_limpia = limpiar_ruta(extraer_ruta_dinamica(item, escaner), objetivo)
+                clasificar_y_guardar(sev_norm, nombre_tag.text if nombre_tag is not None else 'Hallazgo', impacto_tag.text if impacto_tag is not None else "", ruta_limpia, resumen_riesgos, resumen_tipos, hallazgos_crudos)
 
         elif escaner == "Burp Suite":
             for item in root.findall('.//issue'):
                 sev_tag = item.find('severity')
-                sev_val = sev_tag.text if sev_tag is not None else 'Information'
                 nombre_tag = item.find('name')
                 impacto_bg = item.find('issueBackground')
                 impacto_dt = item.find('issueDetail')
                 impacto = impacto_bg.text if impacto_bg is not None else (impacto_dt.text if impacto_dt is not None else "")
-                clasificar_y_guardar(mapear_severidad(sev_val), nombre_tag.text if nombre_tag is not None else 'Hallazgo', impacto, resumen_riesgos, resumen_tipos, hallazgos_crudos)
+                
+                ruta_limpia = limpiar_ruta(extraer_ruta_dinamica(item, escaner), objetivo)
+                clasificar_y_guardar(mapear_severidad(sev_tag.text if sev_tag is not None else 'Information'), nombre_tag.text if nombre_tag is not None else 'Hallazgo', impacto, ruta_limpia, resumen_riesgos, resumen_tipos, hallazgos_crudos)
 
         else: 
             for item in root.findall('.//ReportItem'):
@@ -167,8 +206,13 @@ def extraer_datos_xml(xml_content):
                 if sev_tag is None: sev_tag = item.get('severity')
                 sev_val = sev_tag.text if hasattr(sev_tag, 'text') else sev_tag
                 if sev_val is None: continue
+                
                 nombre_tag = item.find('Name')
-                clasificar_y_guardar(mapear_severidad(sev_val), nombre_tag.text if nombre_tag is not None else item.get('pluginName', 'Hallazgo'), (item.find('Impact').text if item.find('Impact') is not None else ""), resumen_riesgos, resumen_tipos, hallazgos_crudos)
+                impacto_tag = item.find('Impact')
+                if impacto_tag is None: impacto_tag = item.find('Description') 
+                
+                ruta_limpia = limpiar_ruta(extraer_ruta_dinamica(item, escaner), objetivo)
+                clasificar_y_guardar(mapear_severidad(sev_val), nombre_tag.text if nombre_tag is not None else item.get('pluginName', 'Hallazgo'), impacto_tag.text if impacto_tag is not None else "", ruta_limpia, resumen_riesgos, resumen_tipos, hallazgos_crudos)
 
         return resumen_riesgos, resumen_tipos, hallazgos_crudos, objetivo, escaner
     except Exception as e:
@@ -197,7 +241,7 @@ def consolidar_reportes(archivos_cargados):
             objetivo_normalizado_maestro = obj_norm
             objetivo_maestro = obj
         elif objetivo_normalizado_maestro != obj_norm and obj_norm != "desconocido":
-            st.warning(f"⚠️ Conflicto de objetivos: {nombre_archivo} escaneó '{obj_norm}', difiere de '{objetivo_normalizado_maestro}'. Se omitirá.")
+            st.warning(f"⚠️ Conflicto detectado: {nombre_archivo} escaneó '{obj_norm}', difiere del principal '{objetivo_normalizado_maestro}'. Se ha excluido por seguridad.")
             continue
 
         escaneres_detectados.add(escaner)
@@ -226,7 +270,7 @@ def consolidar_reportes(archivos_cargados):
 # ==========================================
 def traducir_inventario_json(hallazgos, cliente):
     hallazgos_top = hallazgos[:30] 
-    prompt = f"Traduce los campos 'Vulnerabilidad' e 'Impacto' de esta lista JSON del ingles al espanol tecnico. MANTEN INTACTO el campo 'Riesgo'. Retorna UNICAMENTE el JSON valido, sin formato markdown:\n{json.dumps(hallazgos_top)}"
+    prompt = f"Traduce al español técnico SOLAMENTE los valores de 'Vulnerabilidad' e 'Impacto'. Las claves 'Riesgo' y 'Ruta' DEBEN QUEDAR EXACTAMENTE IGUAL. Devuelve el JSON puro:\n{json.dumps(hallazgos_top)}"
     try:
         respuesta = cliente.models.generate_content(model='gemini-2.5-flash', contents=prompt).text
         respuesta = respuesta.replace("```json", "").replace("```", "").strip()
@@ -252,7 +296,12 @@ def analizar_ejecutivo_con_ia(hallazgos, objetivo, escaneres_lista, cliente):
     except: return "Análisis maestro no disponible."
 
 def analizar_tecnico_con_ia(hallazgos, objetivo, escaneres_lista, cliente):
-    datos_texto = "\n".join([f"- [{h.get('Riesgo', '')}] {h.get('Vulnerabilidad', '')}: {h.get('Impacto', '')}" for h in hallazgos[:15]])
+    datos_texto_lista = []
+    for h in hallazgos[:15]:
+        impacto_limpio = str(h.get('Impacto', ''))[:250] + "..." if len(str(h.get('Impacto', ''))) > 250 else str(h.get('Impacto', ''))
+        datos_texto_lista.append(f"- [{h.get('Riesgo', '')}] {h.get('Vulnerabilidad', '')} en la ruta {h.get('Ruta', 'Global')}: {impacto_limpio}")
+    
+    datos_texto = "\n".join(datos_texto_lista)
     escaneres_str = " + ".join(escaneres_lista)
     
     prompt = f"""Actúa como Arquitecto DevSecOps de Sigmac Corp. Escribe una guía técnica maestra de remediación. Objetivo: {objetivo}. Escáneres de origen: {escaneres_str}. Detalles combinados: {datos_texto}.
@@ -260,7 +309,7 @@ def analizar_tecnico_con_ia(hallazgos, objetivo, escaneres_lista, cliente):
     1. NO uses formato de carta. Impersonal.
     2. NO uses Markdown. Usa múltiples saltos de línea (ENTER) para separar párrafos.
     ESTRUCTURA OBLIGATORIA:
-    EVALUACION TECNICA CONSOLIDADA: (Diagnóstico técnico directo integrando la visión de múltiples motores en 2 párrafos).
+    EVALUACION TECNICA CONSOLIDADA: (Diagnóstico técnico directo integrando la visión de múltiples motores y endpoints afectados en 2 párrafos).
     VECTORES DE ATAQUE COMBINADOS: (Riesgos técnicos).
     GUIA DE REMEDIACION MAESTRA: (3 pasos técnicos detallados)."""
     try: return cliente.models.generate_content(model='gemini-2.5-flash', contents=prompt).text.replace('*', '').replace('#', '').replace('$', '')
@@ -337,6 +386,14 @@ def generar_pdf_maestro(titulo, img_sev, img_tip, img_radar, analisis_ia, hallaz
             pdf.set_x(10)
             pdf.multi_cell(0, 6, text=blindaje_fpdf(titulo_h, truncar_log=True), align='L') 
             
+            ruta_h = h.get('Ruta', 'N/A')
+            if ruta_h and ruta_h != "N/A":
+                pdf.set_font("helvetica", 'I', 9); pdf.set_text_color(100, 100, 100); pdf.set_x(10)
+                if "Global" in ruta_h:
+                    pdf.multi_cell(0, 5, text=blindaje_fpdf("Alcance: Nivel Global / Servidor Completo", truncar_log=True), align='L')
+                else:
+                    pdf.multi_cell(0, 5, text=blindaje_fpdf(f"Endpoint detectado: {ruta_h}", truncar_log=True), align='L')
+            
             pdf.set_font("helvetica", '', 10); pdf.set_text_color(50, 50, 50); pdf.set_x(10)
             pdf.multi_cell(0, 5, text=blindaje_fpdf(h.get('Impacto', 'N/A'), truncar_log=True), align='J')
             pdf.ln(5)
@@ -348,7 +405,7 @@ def generar_pdf_maestro(titulo, img_sev, img_tip, img_radar, analisis_ia, hallaz
 # ==========================================
 if not st.session_state.analisis_completado:
     st.markdown("### 1. Carga de Datos Consolidada")
-    archivos_xml = st.file_uploader("Sube uno o MÚLTIPLES archivos XML del mismo servidor (Nessus, ZAP, Burp, Wapiti, etc.)", type=["xml"], accept_multiple_files=True)
+    archivos_xml = st.file_uploader("Sube uno o MÚLTIPLES archivos XML del mismo servidor (Nessus, ZAP, Burp, Wapiti, Acunetix)", type=["xml"], accept_multiple_files=True)
 
     if st.button("Generar Súper Reportes", type="primary"):
         if not api_key_input:
@@ -356,7 +413,7 @@ if not st.session_state.analisis_completado:
         elif not archivos_xml:
             st.warning("⚠️ Sube al menos un archivo XML válido primero.")
         else:
-            with st.spinner(f"Analizando {len(archivos_xml)} archivo(s) y consolidando reportes maestros. Esto tomará un par de minutos..."):
+            with st.spinner(f"Analizando {len(archivos_xml)} archivo(s) y consolidando reportes maestros..."):
                 archivos_cargados = {f.name: f.getvalue() for f in archivos_xml}
                 
                 resultado_consolidado = consolidar_reportes(archivos_cargados)
@@ -395,9 +452,16 @@ if not st.session_state.analisis_completado:
                             ax.set_yticklabels([]); ax.set_xticks(angles[:-1]); ax.set_xticklabels(labels, fontsize=9, fontweight='bold', color='#2C3E50'); ax.set_ylim(0, 10)
                             plt.savefig(p_rad, dpi=300, transparent=True, bbox_inches='tight'); plt.close()
 
-                            # IA Pipeline Master
+                            # IA Pipeline Master con pausas para evitar bloqueos
+                            st.info("🧠 Traducción en proceso...")
                             hallazgos_traducidos = traducir_inventario_json(hallazgos, cliente)
+                            time.sleep(3)
+                            
+                            st.info("🧠 Redactando Análisis Ejecutivo...")
                             ia_ejecutiva = analizar_ejecutivo_con_ia(hallazgos_traducidos, obj, esc_lista, cliente)
+                            time.sleep(3)
+                            
+                            st.info("🧠 Redactando Guía Técnica...")
                             ia_tecnica = analizar_tecnico_con_ia(hallazgos_traducidos, obj, esc_lista, cliente)
                             
                             # Ensamblaje
@@ -415,7 +479,7 @@ if not st.session_state.analisis_completado:
                     else:
                         st.error("❌ Los archivos subidos no contienen vulnerabilidades válidas o su formato no es compatible.")
                 else:
-                    st.error("❌ Ocurrió un problema durante la consolidación. Asegúrate de que todos los XML pertenezcan a la misma infraestructura.")
+                    st.error("❌ Conflicto detectado: Asegúrate de que todos los XML pertenezcan a la misma infraestructura. El sistema bloqueó la consolidación por seguridad cruzada.")
 
 if st.session_state.analisis_completado:
     st.success("✅ ¡Consolidación exitosa! Tus reportes maestros están listos.")
