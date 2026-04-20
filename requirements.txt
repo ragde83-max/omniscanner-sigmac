@@ -4,3 +4,5 @@ matplotlib
 numpy
 google-genai
 wkhtmltopdf
+jinja2
+pdfkit
