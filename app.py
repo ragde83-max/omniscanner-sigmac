@@ -274,7 +274,7 @@ def consolidar_reportes(archivos_cargados):
     return total_riesgos, total_tipos, madurez, total_hallazgos, objetivo_maestro, list(escaneres_detectados)
 
 # ==========================================
-# 6. ANÁLISIS IA
+# 6. ANÁLISIS IA (CORREGIDO PARA PDF)
 # ==========================================
 def traducir_inventario_json(hallazgos, cliente):
     hallazgos_top = hallazgos[:30] 
@@ -292,36 +292,18 @@ def analizar_ejecutivo_con_ia(hallazgos, objetivo, escaneres_lista, cliente):
     escaneres_str = " + ".join(escaneres_lista)
     
     prompt = f"""Actúa como el CISO de Sigmac Corp. Redacta un análisis ejecutivo maestro, combinando resultados de múltiples herramientas. Objetivo: {objetivo}. Escáneres combinados: {escaneres_str}. Principales vulnerabilidades detectadas: {datos_texto}.
-    # SYSTEM INSTRUCTIONS
-Eres un Lead Offensive Security Engineer. Tu objetivo es auditar logs de tráfico web (BurpSuite) e identificar vectores de ataque reales, priorizando la explotabilidad confirmada sobre la teórica.
-
-## PARÁMETROS DE PROCESAMIENTO
-1. Clasifica las vulnerabilidades detectadas en orden de severidad descendente (Crítica a Informativa) basándote en el impacto al negocio y la facilidad de explotación.
-2. Evalúa categorías clave: Inyecciones (SQLi, OS), XSS, CSRF, SSRF, XXE, Path Traversal, Autenticación y Fuzzing de parámetros.
-3. Para cada hallazgo, extrae la métrica CWE y mapea contra el OWASP Top 10 aplicable.
-
-## RESTRICCIONES
-- Mantén un tono técnico C-Suite y responde con brevedad ejecutiva.
-- PROHIBIDO alucinar vectores de ataque: Si generas un PoC (cURL/Python), debe estar basado EXCLUSIVAMENTE en los parámetros y headers presentes en los logs proporcionados.
-- [CLÁUSULA DE ESCAPE]: Si los datos de entrada son ambiguos o el HTTP Response está truncado, solicita la traza completa en lugar de asumir la explotación.
-
-## FORMATO DE SALIDA
-### 1. Resumen Ejecutivo y Estadísticas
-[Tabla Markdown: Nivel de Severidad | Cantidad de Hallazgos | Riesgo Principal]
-### 2. Análisis de Endpoints y Autenticación
-[Breve evaluación de patrones de acceso, endpoints ocultos y parámetros susceptibles a Fuzzing]
-### 3. Vulnerabilidades Confirmadas (Detalle Técnico)
-Por cada vulnerabilidad, utiliza la siguiente estructura:
-**[Nombre de Vulnerabilidad] - [Severidad]**
-* **Endpoint Afectado:** [Método HTTP y URL]
-* **Descripción Técnica:** [Explicación concisa]
-* **Evidencia (BurpSuite):** [Extracto del request/response que lo confirma]
-* **Proof of Concept (PoC):** [Bloque de código cURL o Python]
-* **Impacto:** [Consecuencia directa]
-* **Remediación:** [Bloque de código o configuración exacta para mitigar]
-* **Referencias:** [CWE / OWASP]."""
-    try: return cliente.models.generate_content(model='gemini-2.5-flash', contents=prompt).text.replace('*', '').replace('#', '').replace('$', '')
-    except Exception as e: return f"Análisis ejecutivo maestro no disponible. (Error IA: {e})"
+    REGLAS ESTRICTAS:
+    1. NO uses formato de carta, saludos o despedidas.
+    2. Documento extenso (mínimo 450 palabras), tono impersonal y directivo.
+    3. NO uses Markdown. Usa múltiples saltos de línea (ENTER) para separar párrafos.
+    ESTRUCTURA OBLIGATORIA (Separa cada sección con doble salto de línea):
+    RESUMEN EJECUTIVO: (Desarrolla el impacto global consolidado de los múltiples escaneos en 2 o 3 párrafos).
+    CAUSA RAIZ OPERATIVA: (Analiza fallas estructurales en TI en 2 párrafos).
+    PLAN DE ACCION ESTRATEGICO: (Desarrolla 3 pasos gerenciales enumerados)."""
+    try: 
+        return cliente.models.generate_content(model='gemini-2.5-flash', contents=prompt).text.replace('*', '').replace('#', '').replace('$', '')
+    except Exception as e: 
+        return f"Análisis ejecutivo maestro no disponible. (Error IA: {e})"
 
 def analizar_tecnico_con_ia(hallazgos, objetivo, escaneres_lista, cliente):
     datos_texto_lista = []
@@ -343,8 +325,10 @@ def analizar_tecnico_con_ia(hallazgos, objetivo, escaneres_lista, cliente):
     EVALUACION TECNICA CONSOLIDADA: (Diagnóstico técnico directo integrando la visión de múltiples motores y endpoints afectados en 2 párrafos).
     VECTORES DE ATAQUE COMBINADOS: (Riesgos técnicos).
     GUIA DE REMEDIACION MAESTRA: (3 pasos técnicos detallados)."""
-    try: return cliente.models.generate_content(model='gemini-2.5-flash', contents=prompt).text.replace('*', '').replace('#', '').replace('$', '')
-    except Exception as e: return f"Análisis técnico maestro no disponible. (Error IA: {e})"
+    try: 
+        return cliente.models.generate_content(model='gemini-2.5-flash', contents=prompt).text.replace('*', '').replace('#', '').replace('$', '')
+    except Exception as e: 
+        return f"Análisis técnico maestro no disponible. (Error IA: {e})"
 
 # ==========================================
 # 7. CLASE PDF
