@@ -1,5 +1,7 @@
 import streamlit as st
 import xml.etree.ElementTree as ET
+import matplotlib
+matplotlib.use('Agg') # Evita que Matplotlib colapse el servidor de Streamlit
 import matplotlib.pyplot as plt
 import numpy as np
 import os
