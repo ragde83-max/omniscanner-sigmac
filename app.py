@@ -1,7 +1,7 @@
 import streamlit as st
 import xml.etree.ElementTree as ET
 import matplotlib
-matplotlib.use('Agg') # Vital para la nube
+matplotlib.use('Agg') # Vital para servidores en la nube
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -45,7 +45,7 @@ with st.sidebar:
         st.rerun()
 
 # ==========================================
-# 3. FUNCIONES CORE
+# 3. FUNCIONES CORE Y NORMALIZACIÓN
 # ==========================================
 def limpiar_html(texto):
     if not texto: return "N/A"
@@ -65,10 +65,16 @@ def mapear_severidad(sev_cruda):
     else: return 'Informational'
 
 def normalizar_objetivo(url):
+    """Extrae el dominio puro, ignorando HTTP, puertos y subdominios www."""
     if not url: return "desconocido"
     url = url.lower().strip()
     if not url.startswith('http'): url = 'http://' + url
-    return urlparse(url).netloc.split(':')[0] 
+    
+    dominio = urlparse(url).netloc.split(':')[0]
+    if dominio.startswith('www.'):
+        dominio = dominio[4:]
+        
+    return dominio 
 
 def limpiar_ruta(ruta_cruda, objetivo):
     if not ruta_cruda or ruta_cruda == "N/A": return "Global"
@@ -76,7 +82,7 @@ def limpiar_ruta(ruta_cruda, objetivo):
     if any(x in ruta for x in ["owasp.org", "mitre.org", "cve", "w3.org", "tools.ietf.org"]): return "Global"
     if ruta.startswith("http"):
         try:
-            if urlparse(ruta).netloc.split(':')[0] != normalizar_objetivo(objetivo): return "Global" 
+            if normalizar_objetivo(ruta) != normalizar_objetivo(objetivo): return "Global" 
         except: pass
     return str(ruta_cruda).strip()
 
@@ -119,9 +125,17 @@ def extraer_datos_xml(xml_content):
         elif 'issues' in root_tag: escaner = "Burp Suite"
         elif 'scangroup' in root_tag or 'scan' in root_tag: escaner = "Acunetix"
 
-        if root.find('.//StartURL') is not None and root.find('.//StartURL').text: objetivo = root.find('.//StartURL').text
-        elif root.find('.//ReportHost') is not None: objetivo = root.find('.//ReportHost').get('name', 'Host')
-        elif root.find('.//host') is not None and root.find('.//host').text: objetivo = root.find('.//host').text
+        # 🔥 EXTRACTOR DE OBJETIVOS RESTAURADO Y COMPLETO
+        if root.find('.//StartURL') is not None and root.find('.//StartURL').text: 
+            objetivo = root.find('.//StartURL').text
+        elif root.find('.//ReportHost') is not None: 
+            objetivo = root.find('.//ReportHost').get('name', 'Host')
+        elif root.find('.//site') is not None: 
+            objetivo = root.find('.//site').get('name', 'Host')
+        elif root.find('.//host') is not None and root.find('.//host').text: 
+            objetivo = root.find('.//host').text
+        elif root.find('.//info[@name="target"]') is not None and root.find('.//info[@name="target"]').text: 
+            objetivo = root.find('.//info[@name="target"]').text
 
         if escaner == "Wapiti":
             for item in root.findall('.//vulnerability'):
@@ -155,13 +169,18 @@ def consolidar_reportes(archivos_cargados):
         xml_str = contenido_bytes.decode('utf-8', errors='ignore')
         r_riesgos, r_tipos, hallazgos, obj, escaner = extraer_datos_xml(xml_str)
         if obj is None: continue 
+        
         obj_norm = normalizar_objetivo(obj)
+        
         if objetivo_normalizado_maestro is None:
             objetivo_normalizado_maestro = obj_norm
             objetivo_maestro = obj
         elif objetivo_normalizado_maestro != obj_norm and obj_norm != "desconocido":
-            st.warning(f"⚠️ Conflicto en {nombre_archivo}. Archivo excluido.")
-            continue
+            # Escudo Relajado: Permite subdominios o ligeras variaciones
+            if obj_norm in objetivo_normalizado_maestro or objetivo_normalizado_maestro in obj_norm:
+                pass
+            else:
+                st.warning(f"⚠️ Nota: '{nombre_archivo}' reporta el objetivo '{obj_norm}', que difiere del principal '{objetivo_normalizado_maestro}'. Consolidando de todos modos.")
 
         escaneres_detectados.add(escaner)
         for k, v in r_riesgos.items(): total_riesgos[k] += v
@@ -322,3 +341,7 @@ if st.session_state.analisis_completado:
         st.components.v1.html(st.session_state.html_ejecutivo, height=800, scrolling=True)
     with tab2:
         st.components.v1.html(st.session_state.html_tecnico, height=800, scrolling=True)
+    
+    if st.button("⏪ Volver al inicio"):
+        st.session_state.analisis_completado = False
+        st.rerun()
