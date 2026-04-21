@@ -1,7 +1,7 @@
 import streamlit as st
 import xml.etree.ElementTree as ET
 import matplotlib
-matplotlib.use('Agg') # Evita que Matplotlib colapse el servidor de Streamlit
+matplotlib.use('Agg') # Vital para la nube
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -15,17 +15,16 @@ from datetime import datetime
 from google import genai
 import tempfile
 from jinja2 import Template
-import pdfkit
 
 # ==========================================
 # 1. CONFIGURACIÓN Y MEMORIA DE SESIÓN
 # ==========================================
-st.set_page_config(page_title="OmniScanner | Sigmac Corp", page_icon="🛡️", layout="centered")
+st.set_page_config(page_title="OmniScanner | Sigmac Corp", page_icon="🛡️", layout="wide")
 
 if 'analisis_completado' not in st.session_state:
     st.session_state.analisis_completado = False
-    st.session_state.pdf_ejecutivo = None
-    st.session_state.pdf_tecnico = None
+    st.session_state.html_ejecutivo = None
+    st.session_state.html_tecnico = None
     st.session_state.objetivo_nombre = ""
 
 if os.path.exists("logo_sigmac.jpg"):
@@ -211,7 +210,7 @@ def analizar_tecnico_con_ia(hallazgos, objetivo, escaneres_lista, cliente):
     except Exception as e: return f"Error IA: {e}"
 
 # ==========================================
-# 5. RENDERIZADO HTML A PDF
+# 5. RENDERIZADO DE PLANTILLA HTML
 # ==========================================
 def obtener_base64_img(ruta_img):
     if not ruta_img or not os.path.exists(ruta_img): return ""
@@ -221,46 +220,47 @@ PLANTILLA_HTML = """
 <!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"><style>
 :root { --primary: #1B263B; --accent: #388E3C; --text-dark: #333; }
-body { font-family: 'Helvetica', Arial, sans-serif; color: var(--text-dark); line-height: 1.6; margin: 0; padding: 0;}
-.cover-page { height: 1040px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); page-break-after: always; }
-.cover-logos img { max-width: 180px; margin-bottom: 40px; }
-.cover-title { font-size: 38px; font-weight: bold; color: var(--primary); text-transform: uppercase; margin-bottom: 10px; }
-.cover-subtitle { font-size: 20px; color: var(--accent); margin-bottom: 40px; }
-.content-page { padding: 40px 50px; page-break-after: always; }
-h2 { color: var(--primary); border-bottom: 2px solid var(--accent); padding-bottom: 5px; }
-.vuln-card { background: #fff; border-left: 5px solid #ccc; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+body { font-family: 'Helvetica', Arial, sans-serif; color: var(--text-dark); line-height: 1.6; margin: 0; padding: 20px; background-color: #f9f9f9;}
+.container { max-width: 1000px; margin: 0 auto; background: white; padding: 40px; box-shadow: 0 0 20px rgba(0,0,0,0.05); }
+.cover-page { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 50px 0; margin-bottom: 40px; border-radius: 8px;}
+.cover-logos img { max-width: 180px; margin-bottom: 30px; }
+.cover-title { font-size: 32px; font-weight: bold; color: var(--primary); text-transform: uppercase; margin-bottom: 10px; }
+.cover-subtitle { font-size: 18px; color: var(--accent); margin-bottom: 30px; }
+h2 { color: var(--primary); border-bottom: 2px solid var(--accent); padding-bottom: 5px; margin-top: 40px; }
+.vuln-card { background: #fff; border-left: 5px solid #ccc; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-radius: 0 8px 8px 0;}
 .vuln-card.critical { border-left-color: #8B0000; } .vuln-card.high { border-left-color: #D32F2F; } .vuln-card.medium { border-left-color: #F57C00; } .vuln-card.low { border-left-color: #FBC02D; }
 .vuln-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 16px; margin: 0; }
 .badge { padding: 4px 8px; color: white; border-radius: 4px; font-size: 12px; }
 .badge-critical { background-color: #8B0000; } .badge-high { background-color: #D32F2F; } .badge-medium { background-color: #F57C00; } .badge-low { background-color: #FBC02D; } .badge-informational { background-color: #455A64; }
 .vuln-route { font-size: 13px; color: #777; font-style: italic; margin-top: 5px; }
 .vuln-impact { font-size: 14px; margin-top: 10px; text-align: justify; }
-.dashboard-grid { display: flex; justify-content: space-between; align-items: center; margin-top: 30px; }
-.dashboard-img { max-width: 48%; border-radius: 8px; }
+.dashboard-grid { display: flex; justify-content: space-around; align-items: center; margin-top: 30px; flex-wrap: wrap;}
+.dashboard-img { max-width: 45%; border-radius: 8px; margin-bottom: 20px;}
+@media print { body { background-color: white; } .container { box-shadow: none; padding: 0; max-width: 100%;} .cover-page { height: 100vh; page-break-after: always; margin-bottom: 0;} h2 { page-break-before: auto; } }
 </style></head><body>
+<div class="container">
     <div class="cover-page">
         <div class="cover-logos">{% if logo_sigmac %}<img src="{{ logo_sigmac }}">{% endif %}</div>
         <div class="cover-title">{{ titulo }}</div><div class="cover-subtitle">Motores Combinados: {{ escaneres }}</div>
-        <div style="margin-top: 50px; font-size: 18px; color: #555;"><p><strong>Objetivo:</strong> {{ objetivo }}</p><p><strong>Fecha:</strong> {{ fecha }}</p></div>
+        <div style="margin-top: 30px; font-size: 16px; color: #555;"><p><strong>Objetivo:</strong> {{ objetivo }}</p><p><strong>Fecha:</strong> {{ fecha }}</p></div>
     </div>
-    <div class="content-page"><h2>1. Dashboard Consolidado</h2>
-        <div class="dashboard-grid">{% if img_radar %}<img src="{{ img_radar }}" class="dashboard-img">{% endif %}{% if img_sev %}<img src="{{ img_sev }}" class="dashboard-img">{% endif %}</div>
-        <div style="text-align: center; margin-top: 20px;">{% if img_tip %}<img src="{{ img_tip }}" style="max-width: 90%; border-radius: 8px;">{% endif %}</div>
-    </div>
-    <div class="content-page"><h2>2. Análisis Maestro</h2><div style="font-size: 15px; text-align: justify; white-space: pre-wrap;">{{ analisis_ia }}</div></div>
-    {% if not es_ejecutivo %}<div class="content-page"><h2>3. Inventario Unificado</h2>
-        {% for h in hallazgos %}<div class="vuln-card {{ h.Riesgo | lower }}"><div class="vuln-header"><span>{{ h.Vulnerabilidad }}</span><span class="badge badge-{{ h.Riesgo | lower }}">{{ h.Riesgo | upper }}</span></div><p class="vuln-route">📍 Endpoint: {{ h.Ruta }}</p><div class="vuln-impact">{{ h.Impacto }}</div></div>{% endfor %}
-    </div>{% endif %}
+    <h2>1. Dashboard Consolidado</h2>
+    <div class="dashboard-grid">{% if img_radar %}<img src="{{ img_radar }}" class="dashboard-img">{% endif %}{% if img_sev %}<img src="{{ img_sev }}" class="dashboard-img">{% endif %}</div>
+    <div style="text-align: center; margin-top: 20px;">{% if img_tip %}<img src="{{ img_tip }}" style="max-width: 90%; border-radius: 8px;">{% endif %}</div>
+    <h2>2. Análisis Maestro</h2>
+    <div style="font-size: 15px; text-align: justify; white-space: pre-wrap; line-height: 1.8;">{{ analisis_ia }}</div>
+    {% if not es_ejecutivo %}
+    <h2>3. Inventario Unificado</h2>
+    {% for h in hallazgos %}<div class="vuln-card {{ h.Riesgo | lower }}"><div class="vuln-header"><span>{{ h.Vulnerabilidad }}</span><span class="badge badge-{{ h.Riesgo | lower }}">{{ h.Riesgo | upper }}</span></div><p class="vuln-route">📍 Endpoint: {{ h.Ruta }}</p><div class="vuln-impact">{{ h.Impacto }}</div></div>{% endfor %}
+    {% endif %}
+</div>
 </body></html>
 """
 
-def generar_pdf_maestro(titulo, img_sev, img_tip, img_radar, analisis_ia, hallazgos_traducidos, objetivo, escaneres_lista, logo_sigmac, ruta_out, es_ejecutivo=True):
+def generar_html_maestro(titulo, img_sev, img_tip, img_radar, analisis_ia, hallazgos_traducidos, objetivo, escaneres_lista, logo_sigmac, es_ejecutivo=True):
     template = Template(PLANTILLA_HTML)
     html_render = template.render(titulo=titulo, escaneres=" + ".join(escaneres_lista), objetivo=objetivo, fecha=datetime.now().strftime('%d de %B, %Y'), logo_sigmac=obtener_base64_img(logo_sigmac), img_sev=obtener_base64_img(img_sev), img_tip=obtener_base64_img(img_tip), img_radar=obtener_base64_img(img_radar), analisis_ia=analisis_ia, hallazgos=hallazgos_traducidos, es_ejecutivo=es_ejecutivo)
-    try:
-        pdfkit.from_string(html_render, ruta_out, options={'page-size': 'Letter', 'margin-top': '0mm', 'margin-right': '0mm', 'margin-bottom': '0mm', 'margin-left': '0mm', 'encoding': "UTF-8", 'disable-smart-shrinking': ''})
-    except Exception as e:
-        st.error(f"Error PDFKit: {e}. Requiere wkhtmltopdf en el sistema.")
+    return html_render
 
 # ==========================================
 # 6. INTERFAZ STREAMLIT
@@ -273,14 +273,13 @@ if not st.session_state.analisis_completado:
         if not api_key_input: st.error("⚠️ Ingresa tu API Key en la barra lateral.")
         elif not archivos_xml: st.warning("⚠️ Sube al menos un archivo XML.")
         else:
-            with st.spinner("Analizando y renderizando reportes corporativos..."):
+            with st.spinner("Analizando y generando reportes corporativos interactivos..."):
                 archivos_cargados = {f.name: f.getvalue() for f in archivos_xml}
                 r_sev, r_tip, madurez, hallazgos, obj, esc_lista = consolidar_reportes(archivos_cargados)
                 
                 if hallazgos:
                     with tempfile.TemporaryDirectory() as tmpdir:
                         p_sev = os.path.join(tmpdir, "sev.png"); p_tip = os.path.join(tmpdir, "tip.png"); p_rad = os.path.join(tmpdir, "rad.png")
-                        p_pdf_ejecutivo = os.path.join(tmpdir, "Ejecutivo.pdf"); p_pdf_tecnico = os.path.join(tmpdir, "Tecnico.pdf")
                         cliente = genai.Client(api_key=api_key_input)
                         
                         colores = {"Critical": '#8B0000', "High": '#D32F2F', "Medium": '#F57C00', "Low": '#FBC02D', "Informational": '#455A64'}
@@ -294,24 +293,32 @@ if not st.session_state.analisis_completado:
                         fig, ax = plt.subplots(figsize=(4.5, 4.5), subplot_kw=dict(polar=True)); ax.fill(angles, stats, color='#388E3C', alpha=0.25); ax.plot(angles, stats, color='#388E3C', linewidth=2); ax.set_yticklabels([]); ax.set_xticks(angles[:-1]); ax.set_xticklabels(labels, fontsize=9, fontweight='bold'); ax.set_ylim(0, 10); plt.savefig(p_rad, transparent=True, bbox_inches='tight'); plt.close()
 
                         h_trad = traducir_inventario_json(hallazgos, cliente)
-                        time.sleep(3)
+                        time.sleep(2)
                         ia_ejec = analizar_ejecutivo_con_ia(h_trad, obj, esc_lista, cliente)
-                        time.sleep(3)
+                        time.sleep(2)
                         ia_tec = analizar_tecnico_con_ia(h_trad, obj, esc_lista, cliente)
                         
-                        generar_pdf_maestro("Auditoria Estrategica Consolidada", p_sev, p_tip, p_rad, ia_ejec, h_trad, obj, esc_lista, "logo_sigmac.jpg", p_pdf_ejecutivo, es_ejecutivo=True)
-                        generar_pdf_maestro("Reporte Tecnico Maestro", p_sev, p_tip, '', ia_tec, h_trad, obj, esc_lista, "logo_sigmac.jpg", p_pdf_tecnico, es_ejecutivo=False)
-
-                        if os.path.exists(p_pdf_ejecutivo) and os.path.exists(p_pdf_tecnico):
-                            with open(p_pdf_ejecutivo, "rb") as f_ejec: st.session_state.pdf_ejecutivo = f_ejec.read()
-                            with open(p_pdf_tecnico, "rb") as f_tec: st.session_state.pdf_tecnico = f_tec.read()
-                            st.session_state.objetivo_nombre = normalizar_objetivo(obj)
-                            st.session_state.analisis_completado = True
-                            st.rerun()
+                        st.session_state.html_ejecutivo = generar_html_maestro("Auditoria Estrategica Consolidada", p_sev, p_tip, p_rad, ia_ejec, h_trad, obj, esc_lista, "logo_sigmac.jpg", es_ejecutivo=True)
+                        st.session_state.html_tecnico = generar_html_maestro("Reporte Tecnico Maestro", p_sev, p_tip, '', ia_tec, h_trad, obj, esc_lista, "logo_sigmac.jpg", es_ejecutivo=False)
+                        st.session_state.objetivo_nombre = normalizar_objetivo(obj)
+                        st.session_state.analisis_completado = True
+                        st.rerun()
                 else: st.error("❌ Los archivos subidos no contienen vulnerabilidades válidas o están cruzados.")
 
 if st.session_state.analisis_completado:
-    st.success("✅ ¡Consolidación exitosa! Tus reportes maestros corporativos están listos.")
+    st.success("✅ ¡Consolidación exitosa! Tus reportes están listos para visualizar y descargar.")
+    
     col1, col2 = st.columns(2)
-    with col1: st.download_button("📥 Descargar Reporte Ejecutivo", data=st.session_state.pdf_ejecutivo, file_name=f"Ejecutivo_{st.session_state.objetivo_nombre}.pdf", mime="application/pdf", use_container_width=True)
-    with col2: st.download_button("📥 Descargar Reporte Técnico", data=st.session_state.pdf_tecnico, file_name=f"Tecnico_{st.session_state.objetivo_nombre}.pdf", mime="application/pdf", use_container_width=True)
+    with col1: 
+        st.download_button("📥 Descargar Reporte Ejecutivo (HTML)", data=st.session_state.html_ejecutivo, file_name=f"Ejecutivo_{st.session_state.objetivo_nombre}.html", mime="text/html", use_container_width=True)
+    with col2: 
+        st.download_button("📥 Descargar Reporte Técnico (HTML)", data=st.session_state.html_tecnico, file_name=f"Tecnico_{st.session_state.objetivo_nombre}.html", mime="text/html", use_container_width=True)
+    
+    st.markdown("---")
+    st.markdown("### Vista Previa de Reportes")
+    tab1, tab2 = st.tabs(["Reporte Ejecutivo", "Reporte Técnico"])
+    
+    with tab1:
+        st.components.v1.html(st.session_state.html_ejecutivo, height=800, scrolling=True)
+    with tab2:
+        st.components.v1.html(st.session_state.html_tecnico, height=800, scrolling=True)
