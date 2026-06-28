@@ -5,3 +5,4 @@ numpy
 google-genai
 wkhtmltopdf
 jinja2
+authlib

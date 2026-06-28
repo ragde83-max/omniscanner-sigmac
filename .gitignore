@@ -1,0 +1,15 @@
+# Archivos sensibles — NUNCA commitear a Git
+.streamlit/secrets.toml
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Archivos temporales
+*.tmp
+*.log

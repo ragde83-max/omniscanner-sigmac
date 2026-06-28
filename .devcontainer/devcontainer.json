@@ -1,11 +1,10 @@
 {
-  "name": "Python 3",
+  "name": "OmniScanner — Sigmac Corp",
   // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
   "image": "mcr.microsoft.com/devcontainers/python:1-3.11-bookworm",
   "customizations": {
     "codespaces": {
       "openFiles": [
-        "README.md",
         "app.py"
       ]
     },
@@ -17,9 +16,12 @@
       ]
     }
   },
-  "updateContentCommand": "[ -f packages.txt ] && sudo apt update && sudo apt upgrade -y && sudo xargs apt install -y <packages.txt; [ -f requirements.txt ] && pip3 install --user -r requirements.txt; pip3 install --user streamlit; echo '✅ Packages installed and Requirements met'",
+  // authlib es requerido por el backend OIDC nativo de Streamlit (st.login / Google OAuth)
+  "updateContentCommand": "[ -f packages.txt ] && sudo apt update && sudo apt upgrade -y && sudo xargs apt install -y <packages.txt; [ -f requirements.txt ] && pip3 install --user -r requirements.txt; pip3 install --user streamlit authlib; echo '✅ Packages installed and Requirements met'",
   "postAttachCommand": {
-    "server": "streamlit run app.py --server.enableCORS false --server.enableXsrfProtection false"
+    // NOTA: --server.enableXsrfProtection false fue eliminado intencionalmente.
+    // Streamlit lo necesita habilitado para que el flujo OAuth de st.login() funcione correctamente.
+    "server": "streamlit run app.py --server.enableCORS false"
   },
   "portsAttributes": {
     "8501": {
