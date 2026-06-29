@@ -531,73 +531,107 @@ def traducir_inventario_json(hallazgos, cliente):
 
 
 def analizar_ejecutivo_con_ia(hallazgos, objetivo, escaneres_lista, cliente):
+    """Genera análisis ejecutivo con secciones etiquetadas para parsing HTML."""
     datos_texto = "\n".join([
         f"- [{h.get('Riesgo', '')}] {desarmar_payloads(h.get('Vulnerabilidad', ''))}"
         for h in hallazgos[:MAX_HALLAZGOS_EJECUTIVO]
     ])
     escaneres_str = " + ".join(escaneres_lista)
-    prompt = f"""Actúa como el Consultor Estratégico CISO de Sigmac Corp. Redacta un Análisis Ejecutivo para la Junta Directiva. Objetivo: {objetivo}. Escáneres combinados: {escaneres_str}. Hallazgos: {datos_texto}.
-    REGLAS ESTRICTAS:
-    1. CERO JERGA TÉCNICA. Habla de riesgo de negocio, fugas de datos y reputación.
-    2. PROHIBIDO Markdown. Usa saltos de línea (ENTER).
-    ESTRUCTURA OBLIGATORIA:
-    IMPACTO OPERACIONAL Y FINANCIERO: (Describe el riesgo de negocio global en 2 párrafos fuertes).
-    VULNERABILIDADES CRITICAS IDENTIFICADAS: (Agrupa los hallazgos en conceptos de negocio, ej. 'Riesgo de robo de sesiones' en lugar de XSS).
-    PLAN DE ACCION ESTRATEGICO (ROADMAP): (3 pasos gerenciales claros para mitigar el riesgo)."""
+
+    prompt = f"""Actúas como el Consultor Estratégico CISO de Sigmac Corp.
+    Redacta un análisis ejecutivo estructurado para la Junta Directiva.
+    Objetivo auditado: {objetivo}
+    Escáneres combinados: {escaneres_str}
+    Hallazgos detectados:
+    {datos_texto}
+
+    INSTRUCCIONES OBLIGATORIAS:
+    1. CERO jerga técnica. Habla exclusivamente de riesgo de negocio, impacto financiero, reputación y cumplimiento normativo.
+    2. Usa EXACTAMENTE los encabezados de sección indicados en el formato siguiente, seguidos de dos puntos y un salto de línea.
+    3. Separa los párrafos con una línea en blanco. No uses guiones, asteriscos ni corchetes.
+    4. Cada sección debe tener al menos 2 párrafos o 3 puntos de acción concretos.
+
+    FORMATO OBLIGATORIO (respeta EXACTAMENTE estos encabezados):
+
+    ##IMPACTO OPERACIONAL Y FINANCIERO##
+    [2 párrafos describiendo el riesgo de negocio global, posibles pérdidas, sanciones regulatorias y daño reputacional]
+
+    ##ÁREAS DE EXPOSICIÓN CRÍTICA##
+    [Agrupa los hallazgos en 4-5 conceptos de negocio. Ej: "Riesgo de robo de sesiones de usuarios", "Exposición de datos sensibles al exterior", etc. Para cada área: nombre del riesgo, consecuencia para el negocio]
+
+    ##ANÁLISIS DE IMPACTO POR ÁREA##
+    [Para cada área de negocio (operaciones, clientes, finanzas, reputación): nivel de exposición actual y consecuencia si no se remedia]
+
+    ##ROADMAP DE ACCIÓN ESTRATÉGICO##
+    [3 fases de acción gerencial: Inmediata (0-30 días), Corto plazo (30-90 días), Largo plazo (90-180 días). Para cada fase: acciones concretas, responsables sugeridos, indicador de éxito]
+
+    ##MÉTRICAS DE EXPOSICIÓN##
+    [5-7 indicadores cuantitativos derivados de los hallazgos: número de activos expuestos, porcentaje de superficie de ataque crítica, estimado de tiempo de exposición, etc.]"""
+
     try:
         texto = llamar_ia_con_reintentos(cliente, MODELO_EJECUTIVO, prompt)
-        return texto.replace('*', '').replace('#', '').replace('$', '')
+        return texto
     except Exception as e:
-        return f"Análisis ejecutivo maestro no disponible: {e}"
+        return f"##IMPACTO OPERACIONAL Y FINANCIERO##\nAnálisis ejecutivo no disponible: {e}"
 
 
 def analizar_tecnico_con_ia(hallazgos, objetivo, escaneres_lista, cliente):
+    """Genera análisis técnico con secciones etiquetadas para parsing HTML."""
     datos_texto_lista = []
     for h in hallazgos[:MAX_HALLAZGOS_TECNICO]:
-        impacto_str   = str(h.get('Impacto', ''))
-        impacto_limpio = impacto_str[:250] + "..." if len(impacto_str) > 250 else impacto_str
+        impacto_str    = str(h.get('Impacto', ''))
+        impacto_limpio = impacto_str[:300] + "..." if len(impacto_str) > 300 else impacto_str
         datos_texto_lista.append(
             f"- [{h.get('Riesgo', '')}] {desarmar_payloads(h.get('Vulnerabilidad', ''))} "
-            f"en la ruta {h.get('Ruta', 'Global')}: {desarmar_payloads(impacto_limpio)}"
+            f"| Ruta: {h.get('Ruta', 'Global')} | Impacto: {desarmar_payloads(impacto_limpio)}"
         )
     datos_texto   = "\n".join(datos_texto_lista)
     escaneres_str = " + ".join(escaneres_lista)
 
-    prompt = f"""Actúa como un experto en seguridad ofensiva y análisis de vulnerabilidades web (Red Team) para Sigmac Corp.
-    Tu tarea es generar una Guía Técnica Maestra basada en el inventario consolidado. Objetivo: {objetivo}. Escáneres: {escaneres_str}.
-    Hallazgos consolidados detectados:
+    prompt = f"""Actúas como un experto Red Team en seguridad ofensiva y análisis de vulnerabilidades web para Sigmac Corp.
+    Genera una Guía Técnica Maestra del inventario consolidado.
+    Objetivo: {objetivo} | Escáneres: {escaneres_str}
+    Hallazgos:
     {datos_texto}
 
-    REGLAS ESTRICTAS Y LIMITACIONES TÉCNICAS:
-    1. PROHIBIDO usar formato Markdown. Usa títulos en MAYÚSCULAS y separa párrafos con saltos de línea (ENTER).
-    2. PROHIBIDO generar código de explotación real (PoC). Explica el Vector de Ataque de forma puramente conceptual.
-    3. Tono impersonal, estructurado y altamente técnico.
+    INSTRUCCIONES OBLIGATORIAS:
+    1. Tono técnico, impersonal y preciso. Sin código fuente malicioso.
+    2. Usa EXACTAMENTE los encabezados indicados.
+    3. No uses Markdown (no asteriscos, no hashes). Separa párrafos con línea en blanco.
+    4. Para cada vulnerabilidad del bloque de análisis, incluye TODOS los campos listados.
 
-    ESTRUCTURA OBLIGATORIA:
-    RESUMEN EJECUTIVO TECNICO: (2 párrafos: estadísticas generales y clasificación de riesgos principales como SQLi, XSS, CSRF, SSRF, etc.).
+    FORMATO OBLIGATORIO:
 
-    ANALISIS DE VULNERABILIDADES PRINCIPALES: (Prioriza por severidad. Los 3 o 4 hallazgos más críticos, para CADA UNO):
-    - VULNERABILIDAD: [Nombre y Severidad]
-    - ENDPOINT AFECTADO: [Ruta]
-    - DESCRIPCION TECNICA: [Descripción técnica clara]
-    - VECTOR DE ATAQUE CONCEPTUAL Y EVIDENCIA: [Cómo se explotaría sin código fuente malicioso]
-    - IMPACTO POTENCIAL: [En negocio y seguridad]
-    - REMEDIACION CONCRETA: [Pasos de solución exactos]
-    - REFERENCIAS: [OWASP, CWE aplicables]
+    ##RESUMEN ESTADÍSTICO##
+    [2 párrafos: distribución de hallazgos por severidad, tipos de vulnerabilidades predominantes (SQLi, XSS, CSRF, headers, criptografía, etc.), superficie de ataque general]
 
-    ANALISIS ADICIONAL:
-    - ENDPOINTS SUSCEPTIBLES A FUZZING: (Parámetros o rutas inyectables detectadas).
-    - PATRONES DE AUTENTICACION Y ACCESO: (Diagnóstico sobre la protección observada o puntos ciegos)."""
+    ##ANÁLISIS DE VULNERABILIDADES PRINCIPALES##
+    [Para cada uno de los 3-4 hallazgos más críticos, escribe EXACTAMENTE estos campos con sus etiquetas]
+    VULNERABILIDAD: [nombre completo y severidad]
+    ENDPOINT: [ruta o dominio afectado]
+    DESCRIPCIÓN TÉCNICA: [explicación técnica del fallo]
+    VECTOR DE ATAQUE: [cómo un atacante lo explotaría, conceptualmente, sin código]
+    IMPACTO POTENCIAL: [consecuencias técnicas y de negocio]
+    REMEDIACIÓN: [pasos concretos de corrección con prioridad]
+    REFERENCIAS: [OWASP Top 10, CWE-ID aplicables]
+    ---
+
+    ##ENDPOINTS SUSCEPTIBLES A FUZZING##
+    [Lista los parámetros y rutas más inyectables detectados con su tipo de riesgo asociado]
+
+    ##DIAGNÓSTICO DE AUTENTICACIÓN Y ACCESO##
+    [Análisis de los mecanismos de autenticación observados, puntos ciegos, sesiones expuestas, configuraciones débiles]"""
 
     try:
         texto = llamar_ia_con_reintentos(cliente, MODELO_TECNICO, prompt)
-        return texto.replace('*', '').replace('#', '').replace('$', '')
+        return texto
     except Exception as e:
-        return f"Análisis técnico maestro no disponible: {e}"
+        return f"##RESUMEN ESTADÍSTICO##\nAnálisis técnico no disponible: {e}"
+
 
 
 # ==========================================
-# 9. RENDERIZADO DE PLANTILLA HTML
+# 9. RENDERIZADO DE PLANTILLA HTML PREMIUM
 # ==========================================
 def obtener_base64_img(ruta_img):
     if not ruta_img or not os.path.exists(ruta_img):
@@ -606,64 +640,357 @@ def obtener_base64_img(ruta_img):
         return f"data:image/png;base64,{base64.b64encode(img_file.read()).decode('utf-8')}"
 
 
+def obtener_base64_jpg(ruta_img):
+    """Convierte logo JPG a base64 para embeber en HTML."""
+    if not ruta_img or not os.path.exists(ruta_img):
+        return ""
+    with open(ruta_img, "rb") as img_file:
+        return f"data:image/jpeg;base64,{base64.b64encode(img_file.read()).decode('utf-8')}"
+
+
+def parsear_secciones_ia(texto_ia):
+    """Convierte texto de IA con encabezados ##SECCION## en lista de (titulo, contenido).
+    Permite que la plantilla HTML renderice cada sección como un bloque visual propio."""
+    secciones = []
+    bloques = re.split(r'##([^#]+)##', texto_ia)
+    # bloques[0] es texto previo al primer ##, luego alterna título/contenido
+    for i in range(1, len(bloques), 2):
+        titulo_sec = bloques[i].strip()
+        contenido  = bloques[i + 1].strip() if (i + 1) < len(bloques) else ""
+        if titulo_sec and contenido:
+            secciones.append({"titulo": titulo_sec, "contenido": contenido})
+    # Si no se encontraron secciones (IA no siguió el formato), devolver como sección única
+    if not secciones and texto_ia.strip():
+        secciones.append({"titulo": "Análisis", "contenido": texto_ia.strip()})
+    return secciones
+
+
 PLANTILLA_HTML = """
 <!DOCTYPE html>
-<html lang="es"><head><meta charset="UTF-8"><style>
-:root { --primary: #0F1B2D; --accent: #1A8C4E; --text-dark: #2C3E50; }
-body { font-family: 'Helvetica', Arial, sans-serif; color: var(--text-dark); line-height: 1.6; margin: 0; padding: 20px; background-color: #f9f9f9;}
-.container { max-width: 1000px; margin: 0 auto; background: white; padding: 40px; box-shadow: 0 0 20px rgba(0,0,0,0.05); }
-.cover-page { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 50px 0; margin-bottom: 40px; border-radius: 8px;}
-.cover-logos img { max-width: 180px; margin-bottom: 30px; }
-.cover-title { font-size: 32px; font-weight: bold; color: var(--primary); text-transform: uppercase; margin-bottom: 10px; }
-.cover-subtitle { font-size: 18px; color: var(--accent); margin-bottom: 30px; }
-h2 { color: var(--primary); border-bottom: 2px solid var(--accent); padding-bottom: 5px; margin-top: 40px; }
-.vuln-card { background: #fff; border-left: 5px solid #ccc; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-radius: 0 8px 8px 0;}
-.vuln-card.critical { border-left-color: #8B0000; } .vuln-card.high { border-left-color: #D32F2F; } .vuln-card.medium { border-left-color: #F57C00; } .vuln-card.low { border-left-color: #FBC02D; }
-.vuln-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 16px; margin: 0; }
-.badge { padding: 4px 8px; color: white; border-radius: 4px; font-size: 12px; }
-.badge-critical { background-color: #8B0000; } .badge-high { background-color: #D32F2F; } .badge-medium { background-color: #F57C00; } .badge-low { background-color: #FBC02D; } .badge-informational { background-color: #455A64; }
-.vuln-route { font-size: 13px; color: #777; font-style: italic; margin-top: 5px; }
-.vuln-impact { font-size: 14px; margin-top: 10px; text-align: justify; }
-.dashboard-grid { display: flex; justify-content: space-around; align-items: center; margin-top: 30px; flex-wrap: wrap;}
-.dashboard-img { max-width: 45%; border-radius: 8px; margin-bottom: 20px;}
-@media print { body { background-color: white; } .container { box-shadow: none; padding: 0; max-width: 100%;} .cover-page { height: 100vh; page-break-after: always; margin-bottom: 0;} h2 { page-break-before: auto; } }
-</style></head><body>
-<div class="container">
-    <div class="cover-page">
-        <div class="cover-logos">{% if logo_sigmac %}<img src="{{ logo_sigmac }}">{% endif %}</div>
-        <div class="cover-title">{{ titulo }}</div><div class="cover-subtitle">Motores Combinados: {{ escaneres }}</div>
-        <div style="margin-top: 30px; font-size: 16px; color: #555;"><p><strong>Objetivo:</strong> {{ objetivo }}</p><p><strong>Fecha:</strong> {{ fecha }}</p></div>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ titulo }} — Sigmac Corp</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy:    #0F1B2D;
+    --green:   #1A8C4E;
+    --text:    #2C3E50;
+    --soft:    #6B7C93;
+    --border:  #E4EBF2;
+    --bg:      #F5F7FA;
+    --white:   #FFFFFF;
+    --crit:    #8B0000;
+    --high:    #D32F2F;
+    --med:     #F57C00;
+    --low:     #FBC02D;
+    --info:    #455A64;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    color: var(--text); background: var(--bg); line-height: 1.7;
+    font-size: 15px;
+  }
+  .page-wrap { max-width: 1050px; margin: 0 auto; background: var(--white);
+    box-shadow: 0 4px 40px rgba(15,27,45,0.10); }
+
+  /* ── COVER ── */
+  .cover {
+    background: linear-gradient(150deg, #0F1B2D 0%, #183352 55%, #1A8C4E 100%);
+    color: white; padding: 80px 60px; text-align: center;
+    page-break-after: always; min-height: 520px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .cover img.logo { max-width: 160px; margin-bottom: 36px;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.4)); }
+  .cover-badge {
+    background: rgba(26,140,78,0.25); border: 1px solid rgba(26,140,78,0.6);
+    border-radius: 20px; padding: 5px 18px; font-size: 12px;
+    font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase;
+    color: #7DFFC0; margin-bottom: 24px;
+  }
+  .cover h1 { font-size: 34px; font-weight: 800; letter-spacing: -0.5px;
+    line-height: 1.2; margin-bottom: 16px; }
+  .cover .scanners { font-size: 14px; color: #A8C4D8; margin-bottom: 36px; }
+  .cover-meta {
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 10px; padding: 20px 40px; display: inline-flex; gap: 50px;
+  }
+  .cover-meta-item { text-align: left; }
+  .cover-meta-item .label { font-size: 11px; text-transform: uppercase;
+    letter-spacing: 1px; color: #7DFFC0; font-weight: 600; }
+  .cover-meta-item .value { font-size: 15px; font-weight: 500; color: white; margin-top: 4px; }
+
+  /* ── CONTENT AREA ── */
+  .content { padding: 50px 60px; }
+
+  /* ── SECTION BANNER ── */
+  .section-banner {
+    background: var(--navy); color: white; padding: 12px 24px;
+    font-size: 13px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; margin: 48px -60px 28px -60px;
+    border-left: 5px solid var(--green);
+  }
+
+  /* ── KPI CARDS ── */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 36px; }
+  .kpi-card {
+    border-radius: 10px; padding: 20px 16px; text-align: center;
+    color: white; box-shadow: 0 3px 12px rgba(0,0,0,0.15);
+  }
+  .kpi-card .kpi-num { font-size: 38px; font-weight: 800; line-height: 1; }
+  .kpi-card .kpi-lbl { font-size: 11px; font-weight: 600; letter-spacing: 1px;
+    text-transform: uppercase; margin-top: 6px; opacity: 0.9; }
+  .kpi-critical { background: linear-gradient(135deg, #8B0000, #B71C1C); }
+  .kpi-high     { background: linear-gradient(135deg, #D32F2F, #E53935); }
+  .kpi-medium   { background: linear-gradient(135deg, #E65100, #F57C00); }
+  .kpi-low      { background: linear-gradient(135deg, #F57F17, #FBC02D); }
+
+  /* ── CHARTS ── */
+  .chart-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+    margin: 24px 0;
+  }
+  .chart-box { background: var(--bg); border-radius: 10px; padding: 16px;
+    border: 1px solid var(--border); text-align: center; }
+  .chart-box img { max-width: 100%; border-radius: 6px; }
+  .chart-full { background: var(--bg); border-radius: 10px; padding: 16px;
+    border: 1px solid var(--border); text-align: center; margin-top: 20px; }
+  .chart-full img { max-width: 85%; border-radius: 6px; }
+
+  /* ── AI ANALYSIS SECTIONS ── */
+  .ai-section { margin-bottom: 32px; }
+  .ai-section-title {
+    font-size: 15px; font-weight: 700; color: var(--navy);
+    border-left: 4px solid var(--green); padding-left: 12px;
+    margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .ai-section-body {
+    font-size: 14px; line-height: 1.85; color: var(--text);
+    text-align: justify; white-space: pre-wrap;
+  }
+  /* Highlight inline labels like VULNERABILIDAD: ENDPOINT: etc. */
+  .ai-section-body strong { color: var(--navy); }
+
+  /* ── VULN CARDS ── */
+  .vuln-list { display: flex; flex-direction: column; gap: 20px; margin-top: 8px; }
+  .vuln-card {
+    border-radius: 10px; overflow: hidden;
+    box-shadow: 0 2px 10px rgba(15,27,45,0.08);
+    border: 1px solid var(--border);
+  }
+  .vuln-card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+  }
+  .vuln-card-title { font-size: 15px; font-weight: 600; color: var(--navy); flex: 1; }
+  .severity-badge {
+    padding: 4px 12px; border-radius: 20px; font-size: 11px;
+    font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: white;
+    white-space: nowrap; margin-left: 12px;
+  }
+  .badge-critical { background: var(--crit); }
+  .badge-high     { background: var(--high); }
+  .badge-medium   { background: var(--med); }
+  .badge-low      { background: var(--low); color: #333; }
+  .badge-informational { background: var(--info); }
+  .vuln-card-stripe {
+    height: 4px;
+  }
+  .stripe-critical { background: var(--crit); }
+  .stripe-high     { background: var(--high); }
+  .stripe-medium   { background: var(--med); }
+  .stripe-low      { background: var(--low); }
+  .stripe-informational { background: var(--info); }
+  .vuln-card-body { padding: 16px 20px; background: white; }
+  .vuln-endpoint {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; padding: 5px 12px; font-size: 12px;
+    font-family: 'Courier New', monospace; color: var(--soft);
+    margin-bottom: 12px; max-width: 100%; word-break: break-all;
+  }
+  .vuln-impact-text { font-size: 13px; color: var(--text); line-height: 1.7; }
+
+  /* ── MATURITY TABLE ── */
+  .maturity-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  .maturity-table th {
+    background: var(--navy); color: white; padding: 10px 16px;
+    font-size: 12px; font-weight: 600; text-align: left; letter-spacing: 0.5px;
+  }
+  .maturity-table td { padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .maturity-table tr:nth-child(even) td { background: var(--bg); }
+  .score-bar-wrap { background: #eee; border-radius: 20px; height: 8px; width: 100px; display: inline-block; }
+  .score-bar { height: 8px; border-radius: 20px; display: block; }
+
+  /* ── FOOTER ── */
+  .report-footer {
+    background: var(--navy); color: rgba(255,255,255,0.5);
+    text-align: center; padding: 18px; font-size: 11px; letter-spacing: 0.5px;
+  }
+
+  /* ── PRINT ── */
+  @media print {
+    body { background: white; }
+    .page-wrap { box-shadow: none; }
+    .cover { page-break-after: always; }
+    .section-banner { page-break-before: auto; }
+    .vuln-card { page-break-inside: avoid; }
+    .ai-section { page-break-inside: avoid; }
+    .content { padding: 30px 40px; }
+    .section-banner { margin: 30px -40px 20px -40px; }
+  }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <!-- PORTADA -->
+  <div class="cover">
+    {% if logo_sigmac %}<img src="{{ logo_sigmac }}" class="logo" alt="Sigmac Corp">{% endif %}
+    <div class="cover-badge">Auditoría de Ciberseguridad</div>
+    <h1>{{ titulo }}</h1>
+    <p class="scanners">Motores combinados: {{ escaneres }}</p>
+    <div class="cover-meta">
+      <div class="cover-meta-item">
+        <div class="label">Objetivo</div>
+        <div class="value">{{ objetivo }}</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="label">Fecha de emisión</div>
+        <div class="value">{{ fecha }}</div>
+      </div>
+      <div class="cover-meta-item">
+        <div class="label">Clasificación</div>
+        <div class="value">Confidencial</div>
+      </div>
     </div>
-    <h2>1. Dashboard Consolidado</h2>
-    <div class="dashboard-grid">{% if img_radar %}<img src="{{ img_radar }}" class="dashboard-img">{% endif %}{% if img_sev %}<img src="{{ img_sev }}" class="dashboard-img">{% endif %}</div>
-    <div style="text-align: center; margin-top: 20px;">{% if img_tip %}<img src="{{ img_tip }}" style="max-width: 90%; border-radius: 8px;">{% endif %}</div>
-    <h2>2. Análisis Maestro</h2>
-    <div style="font-size: 15px; text-align: justify; white-space: pre-wrap; line-height: 1.8;">{{ analisis_ia }}</div>
-    {% if not es_ejecutivo %}
-    <h2>3. Inventario Unificado</h2>
-    {% for h in hallazgos %}<div class="vuln-card {{ h.Riesgo | lower }}"><div class="vuln-header"><span>{{ h.Vulnerabilidad }}</span><span class="badge badge-{{ h.Riesgo | lower }}">{{ h.Riesgo | upper }}</span></div><p class="vuln-route">📍 Endpoint: {{ h.Ruta }}</p><div class="vuln-impact">{{ h.Impacto }}</div></div>{% endfor %}
+  </div>
+
+  <div class="content">
+
+    <!-- SECCIÓN 1: DASHBOARD -->
+    <div class="section-banner">1. Dashboard de Postura de Riesgo</div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card kpi-critical">
+        <div class="kpi-num">{{ kpi.Critical }}</div>
+        <div class="kpi-lbl">Critical</div>
+      </div>
+      <div class="kpi-card kpi-high">
+        <div class="kpi-num">{{ kpi.High }}</div>
+        <div class="kpi-lbl">High</div>
+      </div>
+      <div class="kpi-card kpi-medium">
+        <div class="kpi-num">{{ kpi.Medium }}</div>
+        <div class="kpi-lbl">Medium</div>
+      </div>
+      <div class="kpi-card kpi-low">
+        <div class="kpi-num">{{ kpi.Low }}</div>
+        <div class="kpi-lbl">Low</div>
+      </div>
+    </div>
+
+    <!-- Gráficas -->
+    <div class="chart-grid">
+      {% if img_radar %}<div class="chart-box"><img src="{{ img_radar }}" alt="Madurez de Seguridad"></div>{% endif %}
+      {% if img_sev %}<div class="chart-box"><img src="{{ img_sev }}" alt="Distribución de Riesgo"></div>{% endif %}
+    </div>
+    {% if img_tip %}
+    <div class="chart-full"><img src="{{ img_tip }}" alt="Tipos de Vulnerabilidad"></div>
     {% endif %}
-</div>
-</body></html>
+
+    <!-- Tabla de Madurez -->
+    {% if madurez %}
+    <table class="maturity-table" style="margin-top: 32px;">
+      <thead>
+        <tr><th>Área de Seguridad</th><th>Score</th><th>Nivel</th></tr>
+      </thead>
+      <tbody>
+        {% for area, score in madurez.items() %}
+        <tr>
+          <td>{{ area }}</td>
+          <td>
+            <span class="score-bar-wrap">
+              <span class="score-bar" style="width:{{ (score / 10 * 100)|int }}%; background: {% if score >= 7 %}#1A8C4E{% elif score >= 4 %}#F57C00{% else %}#D32F2F{% endif %};"></span>
+            </span>
+            &nbsp; {{ score }}/10
+          </td>
+          <td style="font-weight:600; color: {% if score >= 7 %}#1A8C4E{% elif score >= 4 %}#E65100{% else %}#D32F2F{% endif %}">
+            {% if score >= 7 %}Aceptable{% elif score >= 4 %}Mejorable{% else %}Crítico{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    <!-- SECCIÓN 2: ANÁLISIS MAESTRO IA -->
+    <div class="section-banner">2. Análisis Maestro{% if es_ejecutivo %} Ejecutivo{% else %} Técnico Red Team{% endif %}</div>
+
+    {% for sec in secciones_ia %}
+    <div class="ai-section">
+      <div class="ai-section-title">{{ sec.titulo }}</div>
+      <div class="ai-section-body">{{ sec.contenido }}</div>
+    </div>
+    {% endfor %}
+
+    <!-- SECCIÓN 3: INVENTARIO (solo reporte técnico) -->
+    {% if not es_ejecutivo %}
+    <div class="section-banner">3. Inventario Técnico Consolidado ({{ hallazgos|length }} hallazgos)</div>
+    <div class="vuln-list">
+      {% for h in hallazgos %}
+      <div class="vuln-card">
+        <div class="vuln-card-stripe stripe-{{ h.Riesgo | lower }}"></div>
+        <div class="vuln-card-header">
+          <span class="vuln-card-title">{{ h.Vulnerabilidad }}</span>
+          <span class="severity-badge badge-{{ h.Riesgo | lower }}">{{ h.Riesgo | upper }}</span>
+        </div>
+        <div class="vuln-card-body">
+          <div class="vuln-endpoint">📍 {{ h.Ruta }}</div>
+          <div class="vuln-impact-text">{{ h.Impacto }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+  </div><!-- /content -->
+
+  <div class="report-footer">
+    CONFIDENCIAL — PROPIEDAD EXCLUSIVA DE SIGMAC CORP — Generado por OmniScanner AI · {{ fecha }}
+  </div>
+
+</div><!-- /page-wrap -->
+</body>
+</html>
 """
 
 
 def generar_html_maestro(titulo, img_sev, img_tip, img_radar, analisis_ia,
                           hallazgos_traducidos, objetivo, escaneres_lista,
-                          logo_sigmac, es_ejecutivo=True):
-    template   = Template(PLANTILLA_HTML)
-    html_render = template.render(
+                          logo_sigmac, es_ejecutivo=True, kpi=None, madurez=None):
+    """Renderiza el reporte HTML premium con secciones de IA parseadas."""
+    secciones_ia = parsear_secciones_ia(analisis_ia)
+    template     = Template(PLANTILLA_HTML)
+    html_render  = template.render(
         titulo=titulo,
         escaneres=" + ".join(escaneres_lista),
         objetivo=objetivo,
         fecha=fecha_larga_es(),
-        logo_sigmac=obtener_base64_img(logo_sigmac),
+        logo_sigmac=obtener_base64_jpg(logo_sigmac),
         img_sev=obtener_base64_img(img_sev),
         img_tip=obtener_base64_img(img_tip),
         img_radar=obtener_base64_img(img_radar),
-        analisis_ia=analisis_ia,
+        secciones_ia=secciones_ia,
         hallazgos=hallazgos_traducidos,
-        es_ejecutivo=es_ejecutivo
+        es_ejecutivo=es_ejecutivo,
+        kpi=kpi or {"Critical": 0, "High": 0, "Medium": 0, "Low": 0},
+        madurez=madurez or {},
     )
     return html_render
 
@@ -748,14 +1075,16 @@ if not st.session_state.analisis_completado:
 
                         # --- Renderizado de reportes ---
                         st.session_state.html_ejecutivo = generar_html_maestro(
-                            "Auditoria Estrategica Consolidada",
+                            "Auditoría Estratégica Consolidada",
                             p_sev, p_tip, p_rad, ia_ejec, h_trad,
-                            obj, esc_lista, "logo_sigmac.jpg", es_ejecutivo=True
+                            obj, esc_lista, "logo_sigmac.jpg",
+                            es_ejecutivo=True, kpi=r_sev, madurez=madurez
                         )
                         st.session_state.html_tecnico = generar_html_maestro(
-                            "Reporte Tecnico Maestro",
+                            "Reporte Técnico Maestro",
                             p_sev, p_tip, '', ia_tec, h_trad,
-                            obj, esc_lista, "logo_sigmac.jpg", es_ejecutivo=False
+                            obj, esc_lista, "logo_sigmac.jpg",
+                            es_ejecutivo=False, kpi=r_sev, madurez=madurez
                         )
                         st.session_state.objetivo_nombre = normalizar_objetivo(obj)
                         st.session_state.analisis_completado = True
