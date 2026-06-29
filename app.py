@@ -22,11 +22,11 @@ from jinja2 import Template
 # Modelos de IA
 MODELO_TRADUCCION = 'gemini-2.5-flash'
 MODELO_EJECUTIVO  = 'gemini-2.5-flash'
-MODELO_TECNICO    = 'gemini-2.5-flash'
+MODELO_TECNICO    = 'gemini-2.5-pro'   # Pro para mayor profundidad en el análisis técnico
 
 # Tamaños y límites
 MAX_HALLAZGOS_EJECUTIVO = 15   # hallazgos en el prompt ejecutivo
-MAX_HALLAZGOS_TECNICO   = 20   # hallazgos en el prompt técnico
+MAX_HALLAZGOS_TECNICO   = 30   # hallazgos en el prompt técnico (Pro maneja contexto mayor)
 LOTE_TRADUCCION         = 25   # tamaño de lote para traducción completa
 
 # Reintentos con backoff exponencial (mitiga 429 RESOURCE_EXHAUSTED)
@@ -576,57 +576,95 @@ def analizar_ejecutivo_con_ia(hallazgos, objetivo, escaneres_lista, cliente):
 
 
 def analizar_tecnico_con_ia(hallazgos, objetivo, escaneres_lista, cliente):
-    """Genera análisis técnico con secciones etiquetadas para parsing HTML."""
+    """Genera análisis técnico premium con Gemini Pro: veración de positivos,
+    CVSS v3.1, CVE, evidencia y plan de remediación priorizado."""
     datos_texto_lista = []
-    for h in hallazgos[:MAX_HALLAZGOS_TECNICO]:
+    for idx, h in enumerate(hallazgos[:MAX_HALLAZGOS_TECNICO], 1):
         impacto_str    = str(h.get('Impacto', ''))
-        impacto_limpio = impacto_str[:300] + "..." if len(impacto_str) > 300 else impacto_str
+        impacto_limpio = impacto_str[:350] + "..." if len(impacto_str) > 350 else impacto_str
         datos_texto_lista.append(
-            f"- [{h.get('Riesgo', '')}] {desarmar_payloads(h.get('Vulnerabilidad', ''))} "
-            f"| Ruta: {h.get('Ruta', 'Global')} | Impacto: {desarmar_payloads(impacto_limpio)}"
+            f"[{idx}] Severidad: {h.get('Riesgo', 'Unknown')} | "
+            f"Vulnerabilidad: {desarmar_payloads(h.get('Vulnerabilidad', ''))} | "
+            f"Ruta: {h.get('Ruta', 'Global')} | "
+            f"Descripción del escaner: {desarmar_payloads(impacto_limpio)}"
         )
     datos_texto   = "\n".join(datos_texto_lista)
     escaneres_str = " + ".join(escaneres_lista)
+    total_h       = len(hallazgos[:MAX_HALLAZGOS_TECNICO])
 
-    prompt = f"""Actúas como un experto Red Team en seguridad ofensiva y análisis de vulnerabilidades web para Sigmac Corp.
-    Genera una Guía Técnica Maestra del inventario consolidado.
-    Objetivo: {objetivo} | Escáneres: {escaneres_str}
-    Hallazgos:
+    prompt = f"""Eres el analista líder de un equipo Red Team de elite especializado en seguridad ofensiva web.
+    Tu misión es producir una Guía Técnica Maestra de máxima calidad para los ingenieros de seguridad de Sigmac Corp.
+    El reporte debe ser rigurosamente preciso: distingue explícitamente entre hallazgos confirmados y probables falsos positivos.
+
+    CONTEXTO DEL ESCANEO:
+    Objetivo auditado: {objetivo}
+    Motores de escaneo utilizados: {escaneres_str}
+    Total de hallazgos a analizar: {total_h}
+
+    INVENTARIO COMPLETO DE HALLAZGOS:
     {datos_texto}
 
-    INSTRUCCIONES OBLIGATORIAS:
-    1. Tono técnico, impersonal y preciso. Sin código fuente malicioso.
-    2. Usa EXACTAMENTE los encabezados indicados.
-    3. No uses Markdown (no asteriscos, no hashes). Separa párrafos con línea en blanco.
-    4. Para cada vulnerabilidad del bloque de análisis, incluye TODOS los campos listados.
+    INSTRUCCIONES CRÍTICAS:
+    1. Usa tu base de conocimiento de seguridad para determinar qué hallazgos son probables verdaderos positivos y cuáles son falsos positivos típicos de ese tipo de escáner.
+    2. Para cada vulnerabilidad crítica, asigna un score CVSS v3.1 estimado y su vector string.
+    3. Referencia CVE específicos cuando el hallazgo corresponda a una vulnerabilidad conocida.
+    4. La remediación debe ser concreta, con pasos ordenados por impacto y tiempo estimado.
+    5. PROHIBIDO código de explotación malicioso. El vector de ataque es siempre conceptual.
+    6. Separa los párrafos con una línea en blanco. No uses Markdown (sin asteriscos, sin hashes).
+    7. Usa EXACTAMENTE los encabezados ##SECCION## indicados a continuación.
 
-    FORMATO OBLIGATORIO:
+    FORMATO OBLIGATORIO DE SALIDA:
 
-    ##RESUMEN ESTADÍSTICO##
-    [2 párrafos: distribución de hallazgos por severidad, tipos de vulnerabilidades predominantes (SQLi, XSS, CSRF, headers, criptografía, etc.), superficie de ataque general]
+    ##PANORAMA GENERAL DEL ESCANEO##
+    Escribe 2 párrafos que respondan: ¿Cuántos hallazgos hay por nivel de severidad? ¿Qué categorías de vulnerabilidad predominan (inyección, configuración, criptografía, etc.)? ¿Cuál es la superficie de ataque general del objetivo? Incluye un estimado del porcentaje de confianza global en los hallazgos (ej. 70%% verdaderos positivos estimados) basado en el tipo de escáner y la naturaleza de los hallazgos.
 
-    ##ANÁLISIS DE VULNERABILIDADES PRINCIPALES##
-    [Para cada uno de los 3-4 hallazgos más críticos, escribe EXACTAMENTE estos campos con sus etiquetas]
-    VULNERABILIDAD: [nombre completo y severidad]
-    ENDPOINT: [ruta o dominio afectado]
-    DESCRIPCIÓN TÉCNICA: [explicación técnica del fallo]
-    VECTOR DE ATAQUE: [cómo un atacante lo explotaría, conceptualmente, sin código]
-    IMPACTO POTENCIAL: [consecuencias técnicas y de negocio]
-    REMEDIACIÓN: [pasos concretos de corrección con prioridad]
-    REFERENCIAS: [OWASP Top 10, CWE-ID aplicables]
+    ##CLASIFICACIÓN: VERDADEROS POSITIVOS VS FALSOS POSITIVOS##
+    Para CADA hallazgo del inventario, indica:
+    HALLAZGO [Número]: [Nombre de la vulnerabilidad]
+    VEREDICTO: [VERDADERO POSITIVO | PROBABLE VERDADERO POSITIVO | FALSO POSITIVO PROBABLE | REQUIERE VERIFICACIÓN MANUAL]
+    JUSTIFICACIÓN: [Explica en 2-3 oraciones por qué llegas a este veredicto. Considera: el tipo de escáner que lo detectó, si la ruta reportada tiene sentido, si el tipo de vulnerabilidad es común para ese tecnología/endpoint, y patrones típicos de falsos positivos de ese escáner.]
     ---
 
-    ##ENDPOINTS SUSCEPTIBLES A FUZZING##
-    [Lista los parámetros y rutas más inyectables detectados con su tipo de riesgo asociado]
+    ##ANÁLISIS PROFUNDO DE VULNERABILIDADES CRÍTICAS##
+    Para los 3-5 hallazgos con mayor riesgo real (priorizando verdaderos positivos confirmados), escribe un bloque completo para CADA UNO con exactamente estos campos:
+    VULNERABILIDAD: [nombre completo + nivel de severidad]
+    CVSS v3.1 SCORE: [score numérico estimado, ej. 9.1 CRITICAL]
+    CVSS VECTOR: [vector string, ej. AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H]
+    CVE RELACIONADO: [CVE-XXXX-XXXXX si aplica, o N/A]
+    NIVEL DE CONFIANZA: [ALTO / MEDIO / BAJO] - [Justificación breve]
+    ENDPOINT AFECTADO: [ruta o dominio exacto]
+    DESCRIPCIÓN TÉCNICA: [Explicación técnica profunda del fallo: qué falla, por qué falla, qué condición lo hace explotable]
+    EVIDENCIA QUE CONFIRMA EL HALLAZGO: [Indica qué elementos de la descripción del escáner o de la ruta detectada son indicios sólidos de que este hallazgo es real. Si no hay evidencia suficiente, indícalo claramente.]
+    VECTOR DE ATAQUE CONCEPTUAL: [Cómo un atacante lo explotaría paso a paso, de forma puramente descriptiva, sin código]
+    IMPACTO TÉCNICO: [Qué puede lograr un atacante explotando esta vulnerabilidad]
+    IMPACTO EN EL NEGOCIO: [Consecuencias para la operación, datos, clientes y reputación]
+    REMEDIACIÓN CONCRETA: [Pasos exactos, en orden de prioridad, para corregir la vulnerabilidad. Incluye configuración específica, actualizaciones de versión o cambios de código recomendados de forma descriptiva.]
+    TIEMPO ESTIMADO DE REMEDIACIÓN: [Horas o días estimados para un equipo técnico]
+    REFERENCIAS TÉCNICAS: [OWASP Top 10 categoría, CWE-ID, CVE si aplica, NIST, documentación oficial del fabricante si es relevante]
+    ===
 
-    ##DIAGNÓSTICO DE AUTENTICACIÓN Y ACCESO##
-    [Análisis de los mecanismos de autenticación observados, puntos ciegos, sesiones expuestas, configuraciones débiles]"""
+    ##HALLAZGOS DESCARTABLES - FALSOS POSITIVOS DETECTADOS##
+    Lista los hallazgos que clasificaste como FALSO POSITIVO PROBABLE. Para cada uno:
+    HALLAZGO [Número]: [Nombre]
+    RAZÓN DEL DESCARTE: [Explicación técnica de por qué es probablemente un falso positivo]
+    CÓMO VERIFICAR: [Pasos manuales concretos para confirmar si es real o no antes de descartar definitivamente]
+
+    ##SUPERFICIE DE ATAQUE PRIORITARIA PARA PRUEBAS MANUALES##
+    Enumera los endpoints, parámetros y componentes que deben ser verificados manualmente por un pentester antes de cerrar la auditoría. Para cada uno indica: qué probar, qué tipo de payload conceptual usar y qué respuesta confirmaría el hallazgo.
+
+    ##DIAGNÓSTICO DE AUTENTICACIÓN Y GESTIÓN DE SESIONES##
+    Análisis profundo de: mecanismos de autenticación observados en los hallazgos, cookies y cabeceras de sesión detectadas, configuraciones débiles de tokens, puntos ciegos de autorización, y recomendaciones de hardening de autenticación.
+
+    ##PLAN DE REMEDIACIÓN PRIORIZADO##
+    Una tabla de texto (sin formato Markdown, usa espacios para alinear) que liste TODAS las vulnerabilidades reales con:
+    Prioridad | Vulnerabilidad | Esfuerzo estimado | Impacto de remediación
+    Ordena de mayor a menor urgencia. Al final, escribe 2 párrafos con recomendaciones estratégicas para el equipo de desarrollo sobre cómo evitar este tipo de vulnerabilidades en el futuro."""
 
     try:
         texto = llamar_ia_con_reintentos(cliente, MODELO_TECNICO, prompt)
         return texto
     except Exception as e:
-        return f"##RESUMEN ESTADÍSTICO##\nAnálisis técnico no disponible: {e}"
+        return f"##PANORAMA GENERAL DEL ESCANEO##\nAnálisis técnico no disponible: {e}"
 
 
 
