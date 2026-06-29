@@ -531,7 +531,7 @@ def traducir_inventario_json(hallazgos, cliente):
 
 
 def analizar_ejecutivo_con_ia(hallazgos, objetivo, escaneres_lista, cliente):
-    """Genera análisis ejecutivo con secciones etiquetadas para parsing HTML."""
+    """Genera análisis ejecutivo con secciones etiquetadas y tablas para CISO."""
     datos_texto = "\n".join([
         f"- [{h.get('Riesgo', '')}] {desarmar_payloads(h.get('Vulnerabilidad', ''))}"
         for h in hallazgos[:MAX_HALLAZGOS_EJECUTIVO]
@@ -539,34 +539,47 @@ def analizar_ejecutivo_con_ia(hallazgos, objetivo, escaneres_lista, cliente):
     escaneres_str = " + ".join(escaneres_lista)
 
     prompt = f"""Actúas como el Consultor Estratégico CISO de Sigmac Corp.
-    Redacta un análisis ejecutivo estructurado para la Junta Directiva.
+    Redacta un análisis ejecutivo de alto nivel para la Junta Directiva y el CISO.
     Objetivo auditado: {objetivo}
     Escáneres combinados: {escaneres_str}
     Hallazgos detectados:
     {datos_texto}
 
     INSTRUCCIONES OBLIGATORIAS:
-    1. CERO jerga técnica. Habla exclusivamente de riesgo de negocio, impacto financiero, reputación y cumplimiento normativo.
-    2. Usa EXACTAMENTE los encabezados de sección indicados en el formato siguiente, seguidos de dos puntos y un salto de línea.
-    3. Separa los párrafos con una línea en blanco. No uses guiones, asteriscos ni corchetes.
-    4. Cada sección debe tener al menos 2 párrafos o 3 puntos de acción concretos.
+    1. CERO jerga técnica en las secciones narrativas. Habla de riesgo de negocio, impacto financiero, reputación y cumplimiento normativo.
+    2. Usa EXACTAMENTE los encabezados ##SECCION## indicados.
+    3. En las secciones donde se indica TABLA, genera una tabla en formato Markdown pipe (|col1|col2|...) con una fila separadora |---|---| después del encabezado.
+    4. Usa **negritas** para resaltar términos clave, niveles de riesgo y fases.
+    5. Usa listas con - para los ítems de cada área de exposición.
+    6. Cada sección narrativa debe tener al menos 2 párrafos sólidos.
 
     FORMATO OBLIGATORIO (respeta EXACTAMENTE estos encabezados):
 
     ##IMPACTO OPERACIONAL Y FINANCIERO##
-    [2 párrafos describiendo el riesgo de negocio global, posibles pérdidas, sanciones regulatorias y daño reputacional]
+    [2 párrafos describiendo el riesgo de negocio global. Usa **negritas** para los impactos más críticos. Menciona posibles sanciones regulatorias, pérdida de reputación y continuidad operativa.]
 
     ##ÁREAS DE EXPOSICIÓN CRÍTICA##
-    [Agrupa los hallazgos en 4-5 conceptos de negocio. Ej: "Riesgo de robo de sesiones de usuarios", "Exposición de datos sensibles al exterior", etc. Para cada área: nombre del riesgo, consecuencia para el negocio]
+    [Lista con - de 4-5 áreas de riesgo de negocio. Para cada una usa formato: - **Nombre del Área** -- consecuencia directa para el negocio y a quién impacta.]
 
-    ##ANÁLISIS DE IMPACTO POR ÁREA##
-    [Para cada área de negocio (operaciones, clientes, finanzas, reputación): nivel de exposición actual y consecuencia si no se remedia]
+    ##ANÁLISIS DE IMPACTO POR ÁREA DE NEGOCIO##
+    [Genera esta tabla exacta en formato pipe Markdown:]
+    |Área de Negocio|Nivel de Exposición|Consecuencia Inmediata|Consecuencia si no se Remedia|
+    |---|---|---|---|
+    [Una fila por área: Operaciones, Clientes, Finanzas / Legal, Reputación]
 
     ##ROADMAP DE ACCIÓN ESTRATÉGICO##
-    [3 fases de acción gerencial: Inmediata (0-30 días), Corto plazo (30-90 días), Largo plazo (90-180 días). Para cada fase: acciones concretas, responsables sugeridos, indicador de éxito]
+    [Genera esta tabla exacta en formato pipe Markdown:]
+    |Fase|Período|Acciones Clave|Responsables|Indicador de Éxito|
+    |---|---|---|---|---|
+    |**Fase 1 — Inmediata**|0-30 días|[2-3 acciones concretas]|[roles]|[métrica medible]|
+    |**Fase 2 — Corto Plazo**|30-90 días|[2-3 acciones concretas]|[roles]|[métrica medible]|
+    |**Fase 3 — Largo Plazo**|90-180 días|[2-3 acciones concretas]|[roles]|[métrica medible]|
 
     ##MÉTRICAS DE EXPOSICIÓN##
-    [5-7 indicadores cuantitativos derivados de los hallazgos: número de activos expuestos, porcentaje de superficie de ataque crítica, estimado de tiempo de exposición, etc.]"""
+    [Genera esta tabla exacta en formato pipe Markdown:]
+    |Métrica Clave|Valor Estimado|Estado|Objetivo de Remediación|
+    |---|---|---|---|
+    [5-7 indicadores: total hallazgos críticos, %% superficie de ataque, MTTR objetivo, activos expuestos, vectores de fraude detectados, etc.]"""
 
     try:
         texto = llamar_ia_con_reintentos(cliente, MODELO_EJECUTIVO, prompt)
@@ -686,9 +699,98 @@ def obtener_base64_jpg(ruta_img):
         return f"data:image/jpeg;base64,{base64.b64encode(img_file.read()).decode('utf-8')}"
 
 
+def _inline_md(texto):
+    """Convierte inline markdown: **bold**, *italic*, `code`."""
+    texto = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', texto)
+    texto = re.sub(r'\*(?!\s)(.+?)(?<!\s)\*', r'<em>\1</em>', texto)
+    texto = re.sub(r'`(.+?)`', r'<code>\1</code>', texto)
+    return texto
+
+
+def markdown_a_html(texto):
+    """Convierte markdown básico a HTML limpio para el reporte.
+    Maneja: **bold**, *italic*, `code`, - listas, 1. listas, tablas pipe, --- separadores."""
+    if not texto:
+        return ""
+    lines   = texto.split('\n')
+    partes  = []
+    in_ul   = False
+    in_ol   = False
+    in_table = False
+
+    for line in lines:
+        s = line.strip()
+
+        # — Tabla pipe —
+        if '|' in s and s.startswith('|') and s.endswith('|'):
+            cells = [c.strip() for c in s.strip('|').split('|')]
+            is_sep = all(re.match(r'^[-:]+$', c) for c in cells if c)
+            if is_sep:
+                continue  # fila separadora de Markdown, se salta
+            if not in_table:
+                # cerrar listas abiertas
+                if in_ul:  partes.append('</ul>');  in_ul  = False
+                if in_ol:  partes.append('</ol>');  in_ol  = False
+                partes.append('<table class="ai-table"><thead><tr>')
+                partes.extend(f'<th>{_inline_md(c)}</th>' for c in cells)
+                partes.append('</tr></thead><tbody>')
+                in_table = True
+            else:
+                partes.append('<tr>')
+                partes.extend(f'<td>{_inline_md(c)}</td>' for c in cells)
+                partes.append('</tr>')
+            continue
+
+        # cerrar tabla si la línea actual no es pipe
+        if in_table:
+            partes.append('</tbody></table>')
+            in_table = False
+
+        # — Separador horizontal —
+        if s in ('---', '===', '***', '___'):
+            if in_ul: partes.append('</ul>'); in_ul = False
+            if in_ol: partes.append('</ol>'); in_ol = False
+            partes.append('<hr class="ai-hr">')
+            continue
+
+        # — Lista no numerada (* o -) —
+        m_ul = re.match(r'^[\*\-]\s+(.*)', s)
+        if m_ul:
+            if in_ol: partes.append('</ol>'); in_ol = False
+            if not in_ul: partes.append('<ul class="ai-ul">'); in_ul = True
+            partes.append(f'<li>{_inline_md(m_ul.group(1))}</li>')
+            continue
+
+        # — Lista numerada —
+        m_ol = re.match(r'^\d+[.)]\s+(.*)', s)
+        if m_ol:
+            if in_ul: partes.append('</ul>'); in_ul = False
+            if not in_ol: partes.append('<ol class="ai-ol">'); in_ol = True
+            partes.append(f'<li>{_inline_md(m_ol.group(1))}</li>')
+            continue
+
+        # — Línea vacía —
+        if not s:
+            if in_ul: partes.append('</ul>'); in_ul = False
+            if in_ol: partes.append('</ol>'); in_ol = False
+            continue
+
+        # — Párrafo normal —
+        if in_ul: partes.append('</ul>'); in_ul = False
+        if in_ol: partes.append('</ol>'); in_ol = False
+        partes.append(f'<p>{_inline_md(s)}</p>')
+
+    # cerrar elementos abiertos al final
+    if in_ul:    partes.append('</ul>')
+    if in_ol:    partes.append('</ol>')
+    if in_table: partes.append('</tbody></table>')
+
+    return '\n'.join(partes)
+
+
 def parsear_secciones_ia(texto_ia):
-    """Convierte texto de IA con encabezados ##SECCION## en lista de (titulo, contenido).
-    Permite que la plantilla HTML renderice cada sección como un bloque visual propio."""
+    """Convierte texto de IA con encabezados ##SECCION## en lista de (titulo, contenido_html).
+    Aplica markdown_a_html() para que las tablas, listas y negritas se rendericen correctamente."""
     secciones = []
     bloques = re.split(r'##([^#]+)##', texto_ia)
     # bloques[0] es texto previo al primer ##, luego alterna título/contenido
@@ -696,10 +798,10 @@ def parsear_secciones_ia(texto_ia):
         titulo_sec = bloques[i].strip()
         contenido  = bloques[i + 1].strip() if (i + 1) < len(bloques) else ""
         if titulo_sec and contenido:
-            secciones.append({"titulo": titulo_sec, "contenido": contenido})
+            secciones.append({"titulo": titulo_sec, "contenido": markdown_a_html(contenido)})
     # Si no se encontraron secciones (IA no siguió el formato), devolver como sección única
     if not secciones and texto_ia.strip():
-        secciones.append({"titulo": "Análisis", "contenido": texto_ia.strip()})
+        secciones.append({"titulo": "Análisis", "contenido": markdown_a_html(texto_ia.strip())})
     return secciones
 
 
@@ -800,18 +902,48 @@ PLANTILLA_HTML = """
   .chart-full img { max-width: 85%; border-radius: 6px; }
 
   /* ── AI ANALYSIS SECTIONS ── */
-  .ai-section { margin-bottom: 32px; }
+  .ai-section { margin-bottom: 36px; }
   .ai-section-title {
     font-size: 15px; font-weight: 700; color: var(--navy);
     border-left: 4px solid var(--green); padding-left: 12px;
-    margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px;
   }
-  .ai-section-body {
-    font-size: 14px; line-height: 1.85; color: var(--text);
-    text-align: justify; white-space: pre-wrap;
+  .ai-section-body { font-size: 14px; line-height: 1.85; color: var(--text); }
+  .ai-section-body p { margin-bottom: 10px; text-align: justify; }
+  .ai-section-body strong { color: var(--navy); font-weight: 600; }
+  .ai-section-body em { color: var(--soft); font-style: italic; }
+  .ai-section-body code {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 4px; padding: 1px 6px; font-size: 12px;
+    font-family: 'Courier New', monospace; color: #c0392b;
   }
-  /* Highlight inline labels like VULNERABILIDAD: ENDPOINT: etc. */
-  .ai-section-body strong { color: var(--navy); }
+  /* AI Tables */
+  .ai-table {
+    width: 100%; border-collapse: collapse; margin: 16px 0 20px 0;
+    font-size: 13px; border-radius: 8px; overflow: hidden;
+    box-shadow: 0 1px 6px rgba(15,27,45,0.08);
+  }
+  .ai-table thead th {
+    background: var(--navy); color: white; padding: 10px 14px;
+    text-align: left; font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
+  }
+  .ai-table tbody td {
+    padding: 9px 14px; border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  .ai-table tbody tr:nth-child(even) td { background: var(--bg); }
+  .ai-table tbody tr:last-child td { border-bottom: none; }
+  /* AI Lists */
+  .ai-ul, .ai-ol {
+    padding-left: 22px; margin: 8px 0 12px 0;
+  }
+  .ai-ul li, .ai-ol li {
+    margin: 5px 0; font-size: 14px; line-height: 1.7; color: var(--text);
+  }
+  /* AI Separator */
+  .ai-hr {
+    border: none; border-top: 1px solid var(--border); margin: 20px 0;
+  }
 
   /* ── VULN CARDS ── */
   .vuln-list { display: flex; flex-direction: column; gap: 20px; margin-top: 8px; }
@@ -973,7 +1105,7 @@ PLANTILLA_HTML = """
     {% for sec in secciones_ia %}
     <div class="ai-section">
       <div class="ai-section-title">{{ sec.titulo }}</div>
-      <div class="ai-section-body">{{ sec.contenido }}</div>
+      <div class="ai-section-body">{{ sec.contenido | safe }}</div>
     </div>
     {% endfor %}
 
