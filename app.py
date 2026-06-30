@@ -20,10 +20,9 @@ from jinja2 import Template
 # 1. CONFIGURACIÓN GLOBAL CENTRALIZADA
 # ==========================================
 # Modelos de IA
-MODELO_TRADUCCION         = 'gemini-2.5-flash'
-MODELO_EJECUTIVO          = 'gemini-2.5-flash'
-MODELO_TECNICO            = 'gemini-2.5-pro'   # Pro para mayor profundidad en el análisis técnico
-MODELO_TECNICO_FALLBACK   = 'gemini-2.5-flash' # Fallback automático si Pro tiene cuota agotada
+MODELO_TRADUCCION = 'gemini-2.5-flash'
+MODELO_EJECUTIVO  = 'gemini-2.5-flash'
+MODELO_TECNICO    = 'gemini-2.5-pro'   # Pro para mayor profundidad en el análisis técnico
 
 # Tamaños y límites
 MAX_HALLAZGOS_EJECUTIVO = 15   # hallazgos en el prompt ejecutivo
@@ -482,7 +481,6 @@ def consolidar_reportes(archivos_cargados):
 # ==========================================
 def llamar_ia_con_reintentos(cliente, modelo, prompt):
     """Llama a Gemini con reintentos y backoff exponencial.
-    Si el modelo es Pro y falla por cuota (free tier), hace fallback automático a Flash.
     Mitiga el error 429 RESOURCE_EXHAUSTED documentado en la infraestructura Sigmac-IAOps."""
     ultimo_error = None
     for intento in range(1, REINTENTOS_IA + 1):
@@ -492,20 +490,6 @@ def llamar_ia_con_reintentos(cliente, modelo, prompt):
             ultimo_error = e
             err_str = str(e)
             es_cuota = '429' in err_str or 'RESOURCE_EXHAUSTED' in err_str.upper()
-
-            # Fallback automático: si Pro agota cuota del free tier, usa Flash inmediatamente
-            if es_cuota and modelo == MODELO_TECNICO and MODELO_TECNICO_FALLBACK != modelo:
-                st.toast(
-                    f"⚡ Gemini Pro sin cuota disponible — usando Flash como respaldo...",
-                    icon="⚡"
-                )
-                try:
-                    return cliente.models.generate_content(
-                        model=MODELO_TECNICO_FALLBACK, contents=prompt
-                    ).text
-                except Exception as e2:
-                    ultimo_error = e2
-                    break  # si Flash también falla, salir del loop
 
             if intento < REINTENTOS_IA:
                 espera = ESPERA_BASE_SEG * (2 ** (intento - 1))
