@@ -1,0 +1,2289 @@
+<?xml version="1.0"?>
+<OWASPZAPReport programName="ZAP" version="2.17.0" generated="mi&#xe9;, 18 mar 2026 21:14:59">
+	
+		<site name="https://sic.cultura.gob.mx" host="sic.cultura.gob.mx" port="443" ssl="true">
+			<alerts>
+				
+					<alertitem>
+						<pluginid>10062</pluginid>
+						<alertRef>10062</alertRef>
+						<alert>PII Disclosure</alert>
+						<name>PII Disclosure</name>
+						<riskcode>3</riskcode>
+						<confidence>2</confidence>
+						<riskdesc>High (Medium)</riskdesc>
+						<confidencedesc>Medium</confidencedesc>
+						<desc>&lt;p&gt;The response contains Personally Identifiable Information, such as CC number, SSN and similar sensitive data.&lt;/p&gt;</desc>
+						<instances>
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/ficha.php?table=teatro&amp;table_id=681</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>2503832842967683</evidence>
+									<otherinfo>Credit Card Type detected: Mastercard</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/ficha.php?table=museo&amp;table_id=305</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>2695470643820153</evidence>
+									<otherinfo>Credit Card Type detected: Mastercard</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/opendata/d/0_museo_directorio.json</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>2695470643820153</evidence>
+									<otherinfo>Credit Card Type detected: Mastercard</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/ficha.php?table=centro_educacion&amp;table_id=817</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>5171345619646863</evidence>
+									<otherinfo>Credit Card Type detected: Mastercard
+Bank Identification Number: 517134
+Brand: MASTERCARD
+Category: 
+Issuer: FIRST DATA CORPORATION</otherinfo>
+								</instance>
+							
+						</instances>
+						<count>4</count>
+						<solution>&lt;p&gt;Check the response for the potential presence of personally identifiable information (PII), ensure nothing sensitive is leaked by the application.&lt;/p&gt;</solution>
+						<otherinfo>&lt;p&gt;Credit Card Type detected: Mastercard&lt;/p&gt;</otherinfo>
+						<reference></reference>
+						<cweid>359</cweid>
+						<wascid>13</wascid>
+						<sourceid>176750</sourceid>
+					</alertitem>
+				
+				
+					<alertitem>
+						<pluginid>10202</pluginid>
+						<alertRef>10202</alertRef>
+						<alert>Absence of Anti-CSRF Tokens</alert>
+						<name>Absence of Anti-CSRF Tokens</name>
+						<riskcode>2</riskcode>
+						<confidence>1</confidence>
+						<riskdesc>Medium (Low)</riskdesc>
+						<confidencedesc>Low</confidencedesc>
+						<desc>&lt;p&gt;No Anti-CSRF tokens were found in a HTML submission form.&lt;/p&gt;&lt;p&gt;A cross-site request forgery is an attack that involves forcing a victim to send an HTTP request to a target destination without their knowledge or intent in order to perform an action as the victim. The underlying cause is application functionality using predictable URL/form actions in a repeatable way. The nature of the attack is that CSRF exploits the trust that a web site has for a user. By contrast, cross-site scripting (XSS) exploits the trust that a user has for a web site. Like XSS, CSRF attacks are not necessarily cross-site, but they can be. Cross-site request forgery is also known as CSRF, XSRF, one-click attack, session riding, confused deputy, and sea surf.&lt;/p&gt;&lt;p&gt;&lt;/p&gt;&lt;p&gt;CSRF attacks are effective in a number of situations, including:&lt;/p&gt;&lt;p&gt;    * The victim has an active session on the target site.&lt;/p&gt;&lt;p&gt;    * The victim is authenticated via HTTP auth on the target site.&lt;/p&gt;&lt;p&gt;    * The victim is on the same local network as the target site.&lt;/p&gt;&lt;p&gt;&lt;/p&gt;&lt;p&gt;CSRF has primarily been used to perform an action against a target site using the victim&apos;s privileges, but recent techniques have been discovered to disclose information by gaining access to the response. The risk of information disclosure is dramatically increased when the target site is vulnerable to XSS, because XSS can be used as a platform for CSRF, allowing the attack to operate within the bounds of the same-origin policy.&lt;/p&gt;</desc>
+						<instances>
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/ficha.php?disciplina=literatura&amp;table=convocatoria&amp;table_id=348</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>&lt;form action=&quot;notificacion2.php&quot; method=&quot;POST&quot; id=&quot;notificacionforma&quot;&gt;</evidence>
+									<otherinfo>No known Anti-CSRF token [anticsrf, CSRFToken, __RequestVerificationToken, csrfmiddlewaretoken, authenticity_token, OWASP_CSRFTOKEN, anoncsrf, csrf_token, _csrf, _csrfSecret, __csrf_magic, CSRF, _token, _csrf_token, _csrfToken] was found in the following HTML form: [Form 1: &quot;boton_cancelar&quot; &quot;email&quot; &quot;id&quot; &quot;nombre&quot; &quot;notificacion_ip&quot; &quot;respenv&quot; &quot;tabla&quot; &quot;telefono&quot; &quot;titulo&quot; ].</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/ficha.php?table=auditorio&amp;table_id=1394</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>&lt;form action=&quot;notificacion2.php&quot; method=&quot;POST&quot; id=&quot;notificacionforma&quot;&gt;</evidence>
+									<otherinfo>No known Anti-CSRF token [anticsrf, CSRFToken, __RequestVerificationToken, csrfmiddlewaretoken, authenticity_token, OWASP_CSRFTOKEN, anoncsrf, csrf_token, _csrf, _csrfSecret, __csrf_magic, CSRF, _token, _csrf_token, _csrfToken] was found in the following HTML form: [Form 1: &quot;boton_cancelar&quot; &quot;email&quot; &quot;id&quot; &quot;nombre&quot; &quot;notificacion_ip&quot; &quot;respenv&quot; &quot;tabla&quot; &quot;telefono&quot; &quot;titulo&quot; ].</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/redsic_codigoc.php</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>&lt;form action=&quot;https://sic.cultura.gob.mx/redsic_alta.php&quot; method=&quot;POST&quot;&gt;</evidence>
+									<otherinfo>No known Anti-CSRF token [anticsrf, CSRFToken, __RequestVerificationToken, csrfmiddlewaretoken, authenticity_token, OWASP_CSRFTOKEN, anoncsrf, csrf_token, _csrf, _csrfSecret, __csrf_magic, CSRF, _token, _csrf_token, _csrfToken] was found in the following HTML form: [Form 1: &quot;ipdir&quot; &quot;unirte&quot; ].</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/redsic_participar.php</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>&lt;form action=&quot;https://sic.cultura.gob.mx/redsic_alta.php&quot; method=&quot;POST&quot;&gt;</evidence>
+									<otherinfo>No known Anti-CSRF token [anticsrf, CSRFToken, __RequestVerificationToken, csrfmiddlewaretoken, authenticity_token, OWASP_CSRFTOKEN, anoncsrf, csrf_token, _csrf, _csrfSecret, __csrf_magic, CSRF, _token, _csrf_token, _csrfToken] was found in the following HTML form: [Form 1: &quot;ipdir&quot; &quot;unirte&quot; ].</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/redsic_reservai.php</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>&lt;form action=&quot;https://sic.cultura.gob.mx/redsic_alta.php&quot; method=&quot;POST&quot;&gt;</evidence>
+									<otherinfo>No known Anti-CSRF token [anticsrf, CSRFToken, __RequestVerificationToken, csrfmiddlewaretoken, authenticity_token, OWASP_CSRFTOKEN, anoncsrf, csrf_token, _csrf, _csrfSecret, __csrf_magic, CSRF, _token, _csrf_token, _csrfToken] was found in the following HTML form: [Form 1: &quot;ipdir&quot; &quot;unirte&quot; ].</otherinfo>
+								</instance>
+							
+						</instances>
+						<count>5</count>
+						<solution>&lt;p&gt;Phase: Architecture and Design&lt;/p&gt;&lt;p&gt;Use a vetted library or framework that does not allow this weakness to occur or provides constructs that make this weakness easier to avoid.&lt;/p&gt;&lt;p&gt;For example, use anti-CSRF packages such as the OWASP CSRFGuard.&lt;/p&gt;&lt;p&gt;&lt;/p&gt;&lt;p&gt;Phase: Implementation&lt;/p&gt;&lt;p&gt;Ensure that your application is free of cross-site scripting issues, because most CSRF defenses can be bypassed using attacker-controlled script.&lt;/p&gt;&lt;p&gt;&lt;/p&gt;&lt;p&gt;Phase: Architecture and Design&lt;/p&gt;&lt;p&gt;Generate a unique nonce for each form, place the nonce into the form, and verify the nonce upon receipt of the form. Be sure that the nonce is not predictable (CWE-330).&lt;/p&gt;&lt;p&gt;Note that this can be bypassed using XSS.&lt;/p&gt;&lt;p&gt;&lt;/p&gt;&lt;p&gt;Identify especially dangerous operations. When the user performs a dangerous operation, send a separate confirmation request to ensure that the user intended to perform that operation.&lt;/p&gt;&lt;p&gt;Note that this can be bypassed using XSS.&lt;/p&gt;&lt;p&gt;&lt;/p&gt;&lt;p&gt;Use the ESAPI Session Management control.&lt;/p&gt;&lt;p&gt;This control includes a component for CSRF.&lt;/p&gt;&lt;p&gt;&lt;/p&gt;&lt;p&gt;Do not use the GET method for any request that triggers a state change.&lt;/p&gt;&lt;p&gt;&lt;/p&gt;&lt;p&gt;Phase: Implementation&lt;/p&gt;&lt;p&gt;Check the HTTP Referer header to see if the request originated from an expected page. This could break legitimate functionality, because users or proxies may have disabled sending the Referer for privacy reasons.&lt;/p&gt;</solution>
+						<otherinfo>&lt;p&gt;No known Anti-CSRF token [anticsrf, CSRFToken, __RequestVerificationToken, csrfmiddlewaretoken, authenticity_token, OWASP_CSRFTOKEN, anoncsrf, csrf_token, _csrf, _csrfSecret, __csrf_magic, CSRF, _token, _csrf_token, _csrfToken] was found in the following HTML form: [Form 1: &quot;boton_cancelar&quot; &quot;email&quot; &quot;id&quot; &quot;nombre&quot; &quot;notificacion_ip&quot; &quot;respenv&quot; &quot;tabla&quot; &quot;telefono&quot; &quot;titulo&quot; ].&lt;/p&gt;</otherinfo>
+						<reference>&lt;p&gt;https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html&lt;/p&gt;&lt;p&gt;https://cwe.mitre.org/data/definitions/352.html&lt;/p&gt;</reference>
+						<cweid>352</cweid>
+						<wascid>9</wascid>
+						<sourceid>6280</sourceid>
+					</alertitem>
+				
+				
+					<alertitem>
+						<pluginid>10038</pluginid>
+						<alertRef>10038-1</alertRef>
+						<alert>Content Security Policy (CSP) Header Not Set</alert>
+						<name>Content Security Policy (CSP) Header Not Set</name>
+						<riskcode>2</riskcode>
+						<confidence>3</confidence>
+						<riskdesc>Medium (High)</riskdesc>
+						<confidencedesc>High</confidencedesc>
+						<desc>&lt;p&gt;Content Security Policy (CSP) is an added layer of security that helps to detect and mitigate certain types of attacks, including Cross Site Scripting (XSS) and data injection attacks. These attacks are used for everything from data theft to site defacement or distribution of malware. CSP provides a set of standard HTTP headers that allow website owners to declare approved sources of content that browsers should be allowed to load on that page &#x2014; covered types are JavaScript, CSS, HTML frames, fonts, images and embeddable objects such as Java applets, ActiveX, audio and video files.&lt;/p&gt;</desc>
+						<instances>
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/_et/</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/datos.php</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/index.php?table=auditorio</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/sitemap.xml</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+						</instances>
+						<count>5</count>
+						<solution>&lt;p&gt;Ensure that your web server, application server, load balancer, etc. is configured to set the Content-Security-Policy header.&lt;/p&gt;</solution>
+						<otherinfo></otherinfo>
+						<reference>&lt;p&gt;https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP&lt;/p&gt;&lt;p&gt;https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html&lt;/p&gt;&lt;p&gt;https://www.w3.org/TR/CSP/&lt;/p&gt;&lt;p&gt;https://w3c.github.io/webappsec-csp/&lt;/p&gt;&lt;p&gt;https://web.dev/articles/csp&lt;/p&gt;&lt;p&gt;https://caniuse.com/#feat=contentsecuritypolicy&lt;/p&gt;&lt;p&gt;https://content-security-policy.com/&lt;/p&gt;</reference>
+						<cweid>693</cweid>
+						<wascid>15</wascid>
+						<sourceid>1</sourceid>
+					</alertitem>
+				
+				
+					<alertitem>
+						<pluginid>10020</pluginid>
+						<alertRef>10020-1</alertRef>
+						<alert>Missing Anti-clickjacking Header</alert>
+						<name>Missing Anti-clickjacking Header</name>
+						<riskcode>2</riskcode>
+						<confidence>2</confidence>
+						<riskdesc>Medium (Medium)</riskdesc>
+						<confidencedesc>Medium</confidencedesc>
+						<desc>&lt;p&gt;The response does not protect against &apos;ClickJacking&apos; attacks. It should include either Content-Security-Policy with &apos;frame-ancestors&apos; directive or X-Frame-Options.&lt;/p&gt;</desc>
+						<instances>
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/</uri>
+									<method>GET</method>
+									<param>x-frame-options</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/datos.php</uri>
+									<method>GET</method>
+									<param>x-frame-options</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/index.php?table=espacio_lectura</uri>
+									<method>GET</method>
+									<param>x-frame-options</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/mapa.php</uri>
+									<method>GET</method>
+									<param>x-frame-options</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/publicaciones_sic.php</uri>
+									<method>GET</method>
+									<param>x-frame-options</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+						</instances>
+						<count>5</count>
+						<solution>&lt;p&gt;Modern Web browsers support the Content-Security-Policy and X-Frame-Options HTTP headers. Ensure one of them is set on all web pages returned by your site/app.&lt;/p&gt;&lt;p&gt;If you expect the page to be framed only by pages on your server (e.g. it&apos;s part of a FRAMESET) then you&apos;ll want to use SAMEORIGIN, otherwise if you never expect the page to be framed, you should use DENY. Alternatively consider implementing Content Security Policy&apos;s &quot;frame-ancestors&quot; directive.&lt;/p&gt;</solution>
+						<otherinfo></otherinfo>
+						<reference>&lt;p&gt;https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/X-Frame-Options&lt;/p&gt;</reference>
+						<cweid>1021</cweid>
+						<wascid>15</wascid>
+						<sourceid>13</sourceid>
+					</alertitem>
+				
+				
+					<alertitem>
+						<pluginid>90003</pluginid>
+						<alertRef>90003</alertRef>
+						<alert>Sub Resource Integrity Attribute Missing</alert>
+						<name>Sub Resource Integrity Attribute Missing</name>
+						<riskcode>2</riskcode>
+						<confidence>3</confidence>
+						<riskdesc>Medium (High)</riskdesc>
+						<confidencedesc>High</confidencedesc>
+						<desc>&lt;p&gt;The integrity attribute is missing on a script or link tag served by an external server. The integrity tag prevents an attacker who have gained access to this server from injecting a malicious content.&lt;/p&gt;</desc>
+						<instances>
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>&lt;script src=&quot;https://cdnjs.cloudflare.com/ajax/libs/ie8/0.2.2/ie8.js&quot;&gt;&lt;/script&gt;</evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>&lt;script src=&quot;https://oss.maxcdn.com/respond/1.4.2/respond.min.js&quot;&gt;&lt;/script&gt;</evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/index.php?table=centrodoc</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>&lt;script async src=&quot;https://www.googletagmanager.com/gtag/js?id=G-YNJ98FB4MT&quot;&gt;&lt;/script&gt;</evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/index.php?table=centrodoc</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>&lt;script src=&quot;https://cdnjs.cloudflare.com/ajax/libs/ie8/0.2.2/ie8.js&quot;&gt;&lt;/script&gt;</evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/index.php?table=centrodoc</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>&lt;script src=&quot;https://oss.maxcdn.com/respond/1.4.2/respond.min.js&quot;&gt;&lt;/script&gt;</evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+						</instances>
+						<count>5</count>
+						<solution>&lt;p&gt;Provide a valid integrity attribute to the tag.&lt;/p&gt;</solution>
+						<otherinfo></otherinfo>
+						<reference>&lt;p&gt;https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity&lt;/p&gt;</reference>
+						<cweid>345</cweid>
+						<wascid>15</wascid>
+						<sourceid>1</sourceid>
+					</alertitem>
+				
+				
+					<alertitem>
+						<pluginid>90022</pluginid>
+						<alertRef>90022</alertRef>
+						<alert>Application Error Disclosure</alert>
+						<name>Application Error Disclosure</name>
+						<riskcode>1</riskcode>
+						<confidence>2</confidence>
+						<riskdesc>Low (Medium)</riskdesc>
+						<confidencedesc>Medium</confidencedesc>
+						<desc>&lt;p&gt;This page contains an error/warning message that may disclose sensitive information like the location of the file that produced the unhandled exception. This information can be used to launch further attacks against the web application. The alert could be a false positive if the error message is found inside a documentation page.&lt;/p&gt;</desc>
+						<instances>
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/lista.php?disciplina=literatura&amp;estado_id=6</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>HTTP/1.0 500 Internal Server Error</evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/lista.php?disciplina=artes_visuales&amp;estado_id&amp;table</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>HTTP/1.0 500 Internal Server Error</evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/lista.php?estado_id=0&amp;municipio_id=-1&amp;table=espacio_lectura</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>HTTP/1.0 500 Internal Server Error</evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/lista_infografias.php</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>HTTP/1.0 500 Internal Server Error</evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/resultado_ba.php?c2=ZAP&amp;c3=ZAP&amp;c4=ZAP&amp;c5=Actuacion&amp;c6=ZAP&amp;disciplina&amp;estado_id=0&amp;localidad_id&amp;municipio_id&amp;table=artista</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>HTTP/1.0 500 Internal Server Error</evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/resultado_ba.php?c2=ZAP&amp;c3=Peri%C3%B3dico&amp;c4=ZAP&amp;disciplina&amp;estado_id=0&amp;localidad_id&amp;municipio_id&amp;table=impresos</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>HTTP/1.0 500 Internal Server Error</evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/resultado_ba.php?c2=ZAP&amp;c3=ZAP&amp;disciplina&amp;estado_id=0&amp;localidad_id&amp;municipio_id&amp;table=cineteca</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>HTTP/1.0 500 Internal Server Error</evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/redsic/guarda_usuario.php</uri>
+									<method>POST</method>
+									<param></param>
+									<attack></attack>
+									<evidence>HTTP/1.0 500 Internal Server Error</evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+						</instances>
+						<count>8</count>
+						<solution>&lt;p&gt;Review the source code of this page. Implement custom error pages. Consider implementing a mechanism to provide a unique error reference/identifier to the client (browser) while logging the details on the server side and not exposing them to the user.&lt;/p&gt;</solution>
+						<otherinfo></otherinfo>
+						<reference></reference>
+						<cweid>550</cweid>
+						<wascid>13</wascid>
+						<sourceid>117607</sourceid>
+					</alertitem>
+				
+				
+					<alertitem>
+						<pluginid>10044</pluginid>
+						<alertRef>10044-1</alertRef>
+						<alert>Big Redirect Detected (Potential Sensitive Information Leak)</alert>
+						<name>Big Redirect Detected (Potential Sensitive Information Leak)</name>
+						<riskcode>1</riskcode>
+						<confidence>2</confidence>
+						<riskdesc>Low (Medium)</riskdesc>
+						<confidencedesc>Medium</confidencedesc>
+						<desc>&lt;p&gt;The server has responded with a redirect that seems to provide a large response. This may indicate that although the server sent a redirect it also responded with body content (which may include sensitive details, PII, etc.).&lt;/p&gt;</desc>
+						<instances>
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/_et</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>Location header URI length: 31 [https://sic.cultura.gob.mx/_et/].
+Predicted response size: 331.
+Response Body Length: 348.</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/p</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>Location header URI length: 29 [https://sic.cultura.gob.mx/p/].
+Predicted response size: 329.
+Response Body Length: 346.</otherinfo>
+								</instance>
+							
+						</instances>
+						<count>2</count>
+						<solution>&lt;p&gt;Ensure that no sensitive information is leaked via redirect responses. Redirect responses should have almost no content.&lt;/p&gt;</solution>
+						<otherinfo>&lt;p&gt;Location header URI length: 31 [https://sic.cultura.gob.mx/_et/].&lt;/p&gt;&lt;p&gt;Predicted response size: 331.&lt;/p&gt;&lt;p&gt;Response Body Length: 348.&lt;/p&gt;</otherinfo>
+						<reference></reference>
+						<cweid>201</cweid>
+						<wascid>13</wascid>
+						<sourceid>9</sourceid>
+					</alertitem>
+				
+				
+					<alertitem>
+						<pluginid>10017</pluginid>
+						<alertRef>10017</alertRef>
+						<alert>Cross-Domain JavaScript Source File Inclusion</alert>
+						<name>Cross-Domain JavaScript Source File Inclusion</name>
+						<riskcode>1</riskcode>
+						<confidence>2</confidence>
+						<riskdesc>Low (Medium)</riskdesc>
+						<confidencedesc>Medium</confidencedesc>
+						<desc>&lt;p&gt;The page includes one or more script files from a third-party domain.&lt;/p&gt;</desc>
+						<instances>
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/index.php?table=auditorio</uri>
+									<method>GET</method>
+									<param>//d3js.org/d3.v3.min.js</param>
+									<attack></attack>
+									<evidence>&lt;script src=&quot;//d3js.org/d3.v3.min.js&quot; charset=&quot;utf-8&quot;&gt;&lt;/script&gt;</evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/index.php?table=auditorio</uri>
+									<method>GET</method>
+									<param>//framework-gb.cdn.gob.mx/gobmx.js</param>
+									<attack></attack>
+									<evidence>&lt;script src=&quot;//framework-gb.cdn.gob.mx/gobmx.js&quot;&gt;&lt;/script&gt;</evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/index.php?table=auditorio</uri>
+									<method>GET</method>
+									<param>https://cdnjs.cloudflare.com/ajax/libs/ie8/0.2.2/ie8.js</param>
+									<attack></attack>
+									<evidence>&lt;script src=&quot;https://cdnjs.cloudflare.com/ajax/libs/ie8/0.2.2/ie8.js&quot;&gt;&lt;/script&gt;</evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/index.php?table=auditorio</uri>
+									<method>GET</method>
+									<param>https://oss.maxcdn.com/respond/1.4.2/respond.min.js</param>
+									<attack></attack>
+									<evidence>&lt;script src=&quot;https://oss.maxcdn.com/respond/1.4.2/respond.min.js&quot;&gt;&lt;/script&gt;</evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/index.php?table=auditorio</uri>
+									<method>GET</method>
+									<param>https://www.googletagmanager.com/gtag/js?id=G-YNJ98FB4MT</param>
+									<attack></attack>
+									<evidence>&lt;script async src=&quot;https://www.googletagmanager.com/gtag/js?id=G-YNJ98FB4MT&quot;&gt;&lt;/script&gt;</evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+						</instances>
+						<count>5</count>
+						<solution>&lt;p&gt;Ensure JavaScript source files are loaded from only trusted sources, and the sources can&apos;t be controlled by end users of the application.&lt;/p&gt;</solution>
+						<otherinfo></otherinfo>
+						<reference></reference>
+						<cweid>829</cweid>
+						<wascid>15</wascid>
+						<sourceid>97</sourceid>
+					</alertitem>
+				
+				
+					<alertitem>
+						<pluginid>10037</pluginid>
+						<alertRef>10037</alertRef>
+						<alert>Server Leaks Information via &quot;X-Powered-By&quot; HTTP Response Header Field(s)</alert>
+						<name>Server Leaks Information via &quot;X-Powered-By&quot; HTTP Response Header Field(s)</name>
+						<riskcode>1</riskcode>
+						<confidence>2</confidence>
+						<riskdesc>Low (Medium)</riskdesc>
+						<confidencedesc>Medium</confidencedesc>
+						<desc>&lt;p&gt;The web/application server is leaking information via one or more &quot;X-Powered-By&quot; HTTP response headers. Access to such information may facilitate attackers identifying other frameworks/components your web application is reliant upon and the vulnerabilities such components may be subject to.&lt;/p&gt;</desc>
+						<instances>
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>X-Powered-By: PHP/8.3.29</evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/datos.php</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>X-Powered-By: PHP/8.3.29</evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/index.php?table=centrodoc</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>X-Powered-By: PHP/8.3.29</evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/mapa.php</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>X-Powered-By: PHP/8.3.29</evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/publicaciones_sic.php</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>X-Powered-By: PHP/8.3.29</evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+						</instances>
+						<count>5</count>
+						<solution>&lt;p&gt;Ensure that your web server, application server, load balancer, etc. is configured to suppress &quot;X-Powered-By&quot; headers.&lt;/p&gt;</solution>
+						<otherinfo></otherinfo>
+						<reference>&lt;p&gt;https://owasp.org/www-project-web-security-testing-guide/v42/4-Web_Application_Security_Testing/01-Information_Gathering/08-Fingerprint_Web_Application_Framework&lt;/p&gt;&lt;p&gt;https://www.troyhunt.com/shhh-dont-let-your-response-headers/&lt;/p&gt;</reference>
+						<cweid>497</cweid>
+						<wascid>13</wascid>
+						<sourceid>1</sourceid>
+					</alertitem>
+				
+				
+					<alertitem>
+						<pluginid>10035</pluginid>
+						<alertRef>10035-1</alertRef>
+						<alert>Strict-Transport-Security Header Not Set</alert>
+						<name>Strict-Transport-Security Header Not Set</name>
+						<riskcode>1</riskcode>
+						<confidence>3</confidence>
+						<riskdesc>Low (High)</riskdesc>
+						<confidencedesc>High</confidencedesc>
+						<desc>&lt;p&gt;HTTP Strict Transport Security (HSTS) is a web security policy mechanism whereby a web server declares that complying user agents (such as a web browser) are to interact with it using only secure HTTPS connections (i.e. HTTP layered over TLS/SSL). HSTS is an IETF standards track protocol and is specified in RFC 6797.&lt;/p&gt;</desc>
+						<instances>
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/_et/</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/index.php?table=centrodoc</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/robots.txt</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/sitemap.xml</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+						</instances>
+						<count>5</count>
+						<solution>&lt;p&gt;Ensure that your web server, application server, load balancer, etc. is configured to enforce Strict-Transport-Security.&lt;/p&gt;</solution>
+						<otherinfo></otherinfo>
+						<reference>&lt;p&gt;https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Strict_Transport_Security_Cheat_Sheet.html&lt;/p&gt;&lt;p&gt;https://owasp.org/www-community/Security_Headers&lt;/p&gt;&lt;p&gt;https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security&lt;/p&gt;&lt;p&gt;https://caniuse.com/stricttransportsecurity&lt;/p&gt;&lt;p&gt;https://datatracker.ietf.org/doc/html/rfc6797&lt;/p&gt;</reference>
+						<cweid>319</cweid>
+						<wascid>15</wascid>
+						<sourceid>1</sourceid>
+					</alertitem>
+				
+				
+					<alertitem>
+						<pluginid>10096</pluginid>
+						<alertRef>10096</alertRef>
+						<alert>Timestamp Disclosure - Unix</alert>
+						<name>Timestamp Disclosure - Unix</name>
+						<riskcode>1</riskcode>
+						<confidence>1</confidence>
+						<riskdesc>Low (Low)</riskdesc>
+						<confidencedesc>Low</confidencedesc>
+						<desc>&lt;p&gt;A timestamp was disclosed by the application/web server. - Unix&lt;/p&gt;</desc>
+						<instances>
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/imgthumb/centro_investigacion_artistica_131.png</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>1532349399</evidence>
+									<otherinfo>1532349399, which evaluates to: 2018-07-23 07:36:39.</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/imgthumb/museo_2528.png</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>1755274191</evidence>
+									<otherinfo>1755274191, which evaluates to: 2025-08-15 10:09:51.</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/imgthumb/museo_2541.png</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>1759172915</evidence>
+									<otherinfo>1759172915, which evaluates to: 2025-09-29 13:08:35.</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/imgthumb/teatro_1011.png</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>1670322893</evidence>
+									<otherinfo>1670322893, which evaluates to: 2022-12-06 04:34:53.</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/imgthumb/teatro_948.png</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>1557832244</evidence>
+									<otherinfo>1557832244, which evaluates to: 2019-05-14 06:10:44.</otherinfo>
+								</instance>
+							
+						</instances>
+						<count>5</count>
+						<solution>&lt;p&gt;Manually confirm that the timestamp data is not sensitive, and that the data cannot be aggregated to disclose exploitable patterns.&lt;/p&gt;</solution>
+						<otherinfo>&lt;p&gt;1532349399, which evaluates to: 2018-07-23 07:36:39.&lt;/p&gt;</otherinfo>
+						<reference>&lt;p&gt;https://cwe.mitre.org/data/definitions/200.html&lt;/p&gt;</reference>
+						<cweid>497</cweid>
+						<wascid>13</wascid>
+						<sourceid>2195</sourceid>
+					</alertitem>
+				
+				
+					<alertitem>
+						<pluginid>10021</pluginid>
+						<alertRef>10021</alertRef>
+						<alert>X-Content-Type-Options Header Missing</alert>
+						<name>X-Content-Type-Options Header Missing</name>
+						<riskcode>1</riskcode>
+						<confidence>2</confidence>
+						<riskdesc>Low (Medium)</riskdesc>
+						<confidencedesc>Medium</confidencedesc>
+						<desc>&lt;p&gt;The Anti-MIME-Sniffing header X-Content-Type-Options was not set to &apos;nosniff&apos;. This allows older versions of Internet Explorer and Chrome to perform MIME-sniffing on the response body, potentially causing the response body to be interpreted and displayed as a content type other than the declared content type. Current (early 2014) and legacy versions of Firefox will use the declared content type (if one is set), rather than performing MIME-sniffing.&lt;/p&gt;</desc>
+						<instances>
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/</uri>
+									<method>GET</method>
+									<param>x-content-type-options</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>This issue still applies to error type pages (401, 403, 500, etc.) as those pages are often still affected by injection issues, in which case there is still concern for browsers sniffing pages away from their actual content type.
+At &quot;High&quot; threshold this scan rule will not alert on client or server error responses.</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/css.gob.mx/index.css</uri>
+									<method>GET</method>
+									<param>x-content-type-options</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>This issue still applies to error type pages (401, 403, 500, etc.) as those pages are often still affected by injection issues, in which case there is still concern for browsers sniffing pages away from their actual content type.
+At &quot;High&quot; threshold this scan rule will not alert on client or server error responses.</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/datos.php</uri>
+									<method>GET</method>
+									<param>x-content-type-options</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>This issue still applies to error type pages (401, 403, 500, etc.) as those pages are often still affected by injection issues, in which case there is still concern for browsers sniffing pages away from their actual content type.
+At &quot;High&quot; threshold this scan rule will not alert on client or server error responses.</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/index.php?table=centrodoc</uri>
+									<method>GET</method>
+									<param>x-content-type-options</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>This issue still applies to error type pages (401, 403, 500, etc.) as those pages are often still affected by injection issues, in which case there is still concern for browsers sniffing pages away from their actual content type.
+At &quot;High&quot; threshold this scan rule will not alert on client or server error responses.</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/robots.txt</uri>
+									<method>GET</method>
+									<param>x-content-type-options</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>This issue still applies to error type pages (401, 403, 500, etc.) as those pages are often still affected by injection issues, in which case there is still concern for browsers sniffing pages away from their actual content type.
+At &quot;High&quot; threshold this scan rule will not alert on client or server error responses.</otherinfo>
+								</instance>
+							
+						</instances>
+						<count>5</count>
+						<solution>&lt;p&gt;Ensure that the application/web server sets the Content-Type header appropriately, and that it sets the X-Content-Type-Options header to &apos;nosniff&apos; for all web pages.&lt;/p&gt;&lt;p&gt;If possible, ensure that the end user uses a standards-compliant and modern web browser that does not perform MIME-sniffing at all, or that can be directed by the web application/web server to not perform MIME-sniffing.&lt;/p&gt;</solution>
+						<otherinfo>&lt;p&gt;This issue still applies to error type pages (401, 403, 500, etc.) as those pages are often still affected by injection issues, in which case there is still concern for browsers sniffing pages away from their actual content type.&lt;/p&gt;&lt;p&gt;At &quot;High&quot; threshold this scan rule will not alert on client or server error responses.&lt;/p&gt;</otherinfo>
+						<reference>&lt;p&gt;https://learn.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/compatibility/gg622941(v=vs.85)&lt;/p&gt;&lt;p&gt;https://owasp.org/www-community/Security_Headers&lt;/p&gt;</reference>
+						<cweid>693</cweid>
+						<wascid>15</wascid>
+						<sourceid>1</sourceid>
+					</alertitem>
+				
+				
+					<alertitem>
+						<pluginid>10019</pluginid>
+						<alertRef>10019-1</alertRef>
+						<alert>Content-Type Header Missing</alert>
+						<name>Content-Type Header Missing</name>
+						<riskcode>0</riskcode>
+						<confidence>2</confidence>
+						<riskdesc>Informational (Medium)</riskdesc>
+						<confidencedesc>Medium</confidencedesc>
+						<desc>&lt;p&gt;The Content-Type header was either missing or empty.&lt;/p&gt;</desc>
+						<instances>
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/images/140682</uri>
+									<method>GET</method>
+									<param>content-type</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+						</instances>
+						<count>1</count>
+						<solution>&lt;p&gt;Ensure each page is setting the specific and appropriate content-type value for the content being delivered.&lt;/p&gt;</solution>
+						<otherinfo></otherinfo>
+						<reference>&lt;p&gt;https://learn.microsoft.com/en-us/previous-versions/windows/internet-explorer/ie-developer/compatibility/gg622941(v=vs.85)&lt;/p&gt;</reference>
+						<cweid>345</cweid>
+						<wascid>12</wascid>
+						<sourceid>110264</sourceid>
+					</alertitem>
+				
+				
+					<alertitem>
+						<pluginid>10024</pluginid>
+						<alertRef>10024</alertRef>
+						<alert>Information Disclosure - Sensitive Information in URL</alert>
+						<name>Information Disclosure - Sensitive Information in URL</name>
+						<riskcode>0</riskcode>
+						<confidence>2</confidence>
+						<riskdesc>Informational (Medium)</riskdesc>
+						<confidencedesc>Medium</confidencedesc>
+						<desc>&lt;p&gt;The request appeared to contain sensitive information leaked in the URL. This can violate PCI and most organizational compliance policies. You can configure the list of strings for this check to add or remove values specific to your environment.&lt;/p&gt;</desc>
+						<instances>
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/mapa.php?clat=16.349526000000000&amp;clon=-96.377970000000000&amp;estado_id=20&amp;municipio_id=146&amp;table=rnbp&amp;table_id=82577&amp;z=16</uri>
+									<method>GET</method>
+									<param>clat</param>
+									<attack></attack>
+									<evidence>16.349526000000000</evidence>
+									<otherinfo>The URL appears to contain credit card information.</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/mapa.php?clat=21.349619060738000&amp;clon=-101.943114459710000&amp;estado_id=14&amp;municipio_id=53&amp;table=galeria&amp;table_id=2184&amp;z=16</uri>
+									<method>GET</method>
+									<param>clat</param>
+									<attack></attack>
+									<evidence>21.349619060738000</evidence>
+									<otherinfo>The URL appears to contain credit card information.</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/mapa.php?clat=21.349831494826000&amp;clon=-101.943193204720000&amp;estado_id=14&amp;municipio_id=53&amp;table=museo&amp;table_id=2580&amp;z=16</uri>
+									<method>GET</method>
+									<param>clat</param>
+									<attack></attack>
+									<evidence>21.349831494826000</evidence>
+									<otherinfo>The URL appears to contain credit card information.</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/mapa.php?clat=16.349526000000000&amp;clon=-96.377970000000000&amp;estado_id=20&amp;municipio_id=146&amp;table=rnbp&amp;table_id=82577&amp;z=16</uri>
+									<method>GET</method>
+									<param>clon</param>
+									<attack></attack>
+									<evidence>-96.377970000000000</evidence>
+									<otherinfo>The URL appears to contain credit card information.</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/mapa.php?clat=18.418872479371000&amp;clon=-97.344812086771000&amp;estado_id=21&amp;municipio_id=156&amp;table=otra_bib&amp;table_id=5005&amp;z=16</uri>
+									<method>GET</method>
+									<param>clon</param>
+									<attack></attack>
+									<evidence>-97.344812086771000</evidence>
+									<otherinfo>The URL appears to contain credit card information.</otherinfo>
+								</instance>
+							
+						</instances>
+						<count>5</count>
+						<solution>&lt;p&gt;Do not pass sensitive information in URIs.&lt;/p&gt;</solution>
+						<otherinfo>&lt;p&gt;The URL appears to contain credit card information.&lt;/p&gt;</otherinfo>
+						<reference></reference>
+						<cweid>598</cweid>
+						<wascid>13</wascid>
+						<sourceid>50552</sourceid>
+					</alertitem>
+				
+				
+					<alertitem>
+						<pluginid>10027</pluginid>
+						<alertRef>10027</alertRef>
+						<alert>Information Disclosure - Suspicious Comments</alert>
+						<name>Information Disclosure - Suspicious Comments</name>
+						<riskcode>0</riskcode>
+						<confidence>2</confidence>
+						<riskdesc>Informational (Medium)</riskdesc>
+						<confidencedesc>Medium</confidencedesc>
+						<desc>&lt;p&gt;The response appears to contain suspicious comments which may help an attacker.&lt;/p&gt;</desc>
+						<instances>
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/js/v4.6.5-dist/ol.js</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>desy formulae taken from
+ http://www.movable</evidence>
+									<otherinfo>The following pattern was used: \bFROM\b and was detected in likely comment: &quot;/*
+
+ Latitude/longitude spherical geodesy formulae taken from
+ http://www.movable-type.co.uk/scripts/latlong.html
+ Licensed unde&quot;, see evidence field for the suspicious comment/snippet.</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/osmol/js/main_osmol.js</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>/**
+ * @TODO El disparador de ca</evidence>
+									<otherinfo>The following pattern was used: \bTODO\b and was detected in likely comment: &quot;/**
+ * @TODO El disparador de cargado de puntos no puede ser asincrono por multiples cargas
+ */&quot;, see evidence field for the suspicious comment/snippet.</otherinfo>
+								</instance>
+							
+						</instances>
+						<count>2</count>
+						<solution>&lt;p&gt;Remove all comments that return information that may help an attacker and fix any underlying problems they refer to.&lt;/p&gt;</solution>
+						<otherinfo>&lt;p&gt;The following pattern was used: \bFROM\b and was detected in likely comment: &quot;/*&lt;/p&gt;&lt;p&gt;&lt;/p&gt;&lt;p&gt; Latitude/longitude spherical geodesy formulae taken from&lt;/p&gt;&lt;p&gt; http://www.movable-type.co.uk/scripts/latlong.html&lt;/p&gt;&lt;p&gt; Licensed unde&quot;, see evidence field for the suspicious comment/snippet.&lt;/p&gt;</otherinfo>
+						<reference></reference>
+						<cweid>615</cweid>
+						<wascid>13</wascid>
+						<sourceid>6264</sourceid>
+					</alertitem>
+				
+				
+					<alertitem>
+						<pluginid>10109</pluginid>
+						<alertRef>10109</alertRef>
+						<alert>Modern Web Application</alert>
+						<name>Modern Web Application</name>
+						<riskcode>0</riskcode>
+						<confidence>2</confidence>
+						<riskdesc>Informational (Medium)</riskdesc>
+						<confidencedesc>Medium</confidencedesc>
+						<desc>&lt;p&gt;The application appears to be a modern web application. If you need to explore it automatically then the Ajax Spider may well be more effective than the standard one.&lt;/p&gt;</desc>
+						<instances>
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>&lt;noscript&gt;&lt;iframe src=&quot;//www.googletagmanager.com/ns.html?id=GTM-NTM388&quot;
+height=&quot;0&quot; width=&quot;0&quot; style=&quot;display:none;visibility:hidden&quot;&gt;&lt;/iframe&gt;&lt;/noscript&gt;</evidence>
+									<otherinfo>A noScript tag has been found, which is an indication that the application works differently with JavaScript enabled compared to when it is not.</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/datos.php</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>&lt;a href=&quot;#&quot; class=&quot;links_fb&quot; id=&quot;openModalBtn&quot;&gt;Participa en la encuesta&lt;/a&gt;</evidence>
+									<otherinfo>Links have been found that do not have traditional href attributes, which is an indication that this is a modern web application.</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/index.php?table=centrodoc</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>&lt;a class=&quot;navbar-brand&quot; href=&quot;#&quot;&gt;CULTURA&lt;/a&gt;</evidence>
+									<otherinfo>Links have been found that do not have traditional href attributes, which is an indication that this is a modern web application.</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/mapa.php</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>&lt;a href=&quot;#&quot;&gt;Mapas&lt;/a&gt;</evidence>
+									<otherinfo>Links have been found that do not have traditional href attributes, which is an indication that this is a modern web application.</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/publicaciones_sic.php</uri>
+									<method>GET</method>
+									<param></param>
+									<attack></attack>
+									<evidence>&lt;a href=&quot;#&quot;&gt;Publicaciones del SIC&lt;/a&gt;</evidence>
+									<otherinfo>Links have been found that do not have traditional href attributes, which is an indication that this is a modern web application.</otherinfo>
+								</instance>
+							
+						</instances>
+						<count>5</count>
+						<solution>&lt;p&gt;This is an informational alert and so no changes are required.&lt;/p&gt;</solution>
+						<otherinfo>&lt;p&gt;A noScript tag has been found, which is an indication that the application works differently with JavaScript enabled compared to when it is not.&lt;/p&gt;</otherinfo>
+						<reference></reference>
+						<cweid>-1</cweid>
+						<wascid>-1</wascid>
+						<sourceid>1</sourceid>
+					</alertitem>
+				
+				
+					<alertitem>
+						<pluginid>10015</pluginid>
+						<alertRef>10015</alertRef>
+						<alert>Re-examine Cache-control Directives</alert>
+						<name>Re-examine Cache-control Directives</name>
+						<riskcode>0</riskcode>
+						<confidence>1</confidence>
+						<riskdesc>Informational (Low)</riskdesc>
+						<confidencedesc>Low</confidencedesc>
+						<desc>&lt;p&gt;The cache-control header has not been set properly or is missing, allowing the browser and proxies to cache content. For static assets like css, js, or image files this might be intended, however, the resources should be reviewed to ensure that no sensitive content will be cached.&lt;/p&gt;</desc>
+						<instances>
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/</uri>
+									<method>GET</method>
+									<param>cache-control</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/datos.php</uri>
+									<method>GET</method>
+									<param>cache-control</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/index.php?table=auditorio</uri>
+									<method>GET</method>
+									<param>cache-control</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/publicaciones_sic.php</uri>
+									<method>GET</method>
+									<param>cache-control</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/robots.txt</uri>
+									<method>GET</method>
+									<param>cache-control</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo></otherinfo>
+								</instance>
+							
+						</instances>
+						<count>5</count>
+						<solution>&lt;p&gt;For secure content, ensure the cache-control HTTP header is set with &quot;no-cache, no-store, must-revalidate&quot;. If an asset should be cached consider setting the directives &quot;public, max-age, immutable&quot;.&lt;/p&gt;</solution>
+						<otherinfo></otherinfo>
+						<reference>&lt;p&gt;https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html#web-content-caching&lt;/p&gt;&lt;p&gt;https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cache-Control&lt;/p&gt;&lt;p&gt;https://grayduck.mn/2021/09/13/cache-control-recommendations/&lt;/p&gt;</reference>
+						<cweid>525</cweid>
+						<wascid>13</wascid>
+						<sourceid>1</sourceid>
+					</alertitem>
+				
+				
+					<alertitem>
+						<pluginid>10031</pluginid>
+						<alertRef>10031</alertRef>
+						<alert>User Controllable HTML Element Attribute (Potential XSS)</alert>
+						<name>User Controllable HTML Element Attribute (Potential XSS)</name>
+						<riskcode>0</riskcode>
+						<confidence>1</confidence>
+						<riskdesc>Informational (Low)</riskdesc>
+						<confidencedesc>Low</confidencedesc>
+						<desc>&lt;p&gt;This check looks at user-supplied input in query string parameters and POST data to identify where certain HTML attribute values might be controlled. This provides hot-spot detection for XSS (cross-site scripting) that will require further review by a security analyst to determine exploitability.&lt;/p&gt;</desc>
+						<instances>
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/?disciplina=literatura</uri>
+									<method>GET</method>
+									<param>disciplina</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/?disciplina=literatura
+
+appears to include user input in:
+a(n) [meta] tag [content] attribute
+
+The user input found was:
+disciplina=literatura
+
+The user-controlled value was:
+literatura : 329 recursos que posee el sistema de informaci&#xf3;n cultural en m&#xe9;xico </otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/?estado_id=20&amp;table=auditorio</uri>
+									<method>GET</method>
+									<param>estado_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/?estado_id=20&amp;table=auditorio
+
+appears to include user input in:
+a(n) [option] tag [value] attribute
+
+The user input found was:
+estado_id=20
+
+The user-controlled value was:
+20</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/?estado_id=0&amp;table=auditorio</uri>
+									<method>GET</method>
+									<param>table</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/?estado_id=0&amp;table=auditorio
+
+appears to include user input in:
+a(n) [meta] tag [content] attribute
+
+The user input found was:
+table=auditorio
+
+The user-controlled value was:
+auditorios : 1,011 recursos que posee el sistema de informaci&#xf3;n cultural en m&#xe9;xico </otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/?table=casa_artesania</uri>
+									<method>GET</method>
+									<param>table</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/?table=casa_artesania
+
+appears to include user input in:
+a(n) [a] tag [target] attribute
+
+The user input found was:
+table=casa_artesania
+
+The user-controlled value was:
+casa_artesania</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/busqueda.php?disciplina=danza</uri>
+									<method>GET</method>
+									<param>disciplina</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/busqueda.php?disciplina=danza
+
+appears to include user input in:
+a(n) [input] tag [value] attribute
+
+The user input found was:
+disciplina=danza
+
+The user-controlled value was:
+danza</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/busqueda.php?disciplina=literatura&amp;estado_id=9&amp;municipio_id=3&amp;table=revista</uri>
+									<method>GET</method>
+									<param>disciplina</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/busqueda.php?disciplina=literatura&amp;estado_id=9&amp;municipio_id=3&amp;table=revista
+
+appears to include user input in:
+a(n) [input] tag [value] attribute
+
+The user input found was:
+disciplina=literatura
+
+The user-controlled value was:
+literatura</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/busqueda.php?disciplina=literatura&amp;estado_id=22&amp;municipio_id=14&amp;table=convocatoria</uri>
+									<method>GET</method>
+									<param>estado_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/busqueda.php?disciplina=literatura&amp;estado_id=22&amp;municipio_id=14&amp;table=convocatoria
+
+appears to include user input in:
+a(n) [option] tag [value] attribute
+
+The user input found was:
+estado_id=22
+
+The user-controlled value was:
+22</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/busqueda.php?disciplina=literatura&amp;estado_id=22&amp;municipio_id=14&amp;table=convocatoria</uri>
+									<method>GET</method>
+									<param>municipio_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/busqueda.php?disciplina=literatura&amp;estado_id=22&amp;municipio_id=14&amp;table=convocatoria
+
+appears to include user input in:
+a(n) [option] tag [value] attribute
+
+The user input found was:
+municipio_id=14
+
+The user-controlled value was:
+14</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/busqueda.php?disciplina=literatura&amp;estado_id=9&amp;municipio_id=3&amp;table=revista</uri>
+									<method>GET</method>
+									<param>table</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/busqueda.php?disciplina=literatura&amp;estado_id=9&amp;municipio_id=3&amp;table=revista
+
+appears to include user input in:
+a(n) [input] tag [value] attribute
+
+The user input found was:
+table=revista
+
+The user-controlled value was:
+revista</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/busqueda.php?estado_id=32</uri>
+									<method>GET</method>
+									<param>estado_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/busqueda.php?estado_id=32
+
+appears to include user input in:
+a(n) [input] tag [value] attribute
+
+The user input found was:
+estado_id=32
+
+The user-controlled value was:
+32</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/busqueda.php?estado_id=20&amp;municipio_id=67&amp;table=auditorio</uri>
+									<method>GET</method>
+									<param>estado_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/busqueda.php?estado_id=20&amp;municipio_id=67&amp;table=auditorio
+
+appears to include user input in:
+a(n) [option] tag [value] attribute
+
+The user input found was:
+estado_id=20
+
+The user-controlled value was:
+20</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/busqueda.php?estado_id=20&amp;municipio_id=67&amp;table=auditorio</uri>
+									<method>GET</method>
+									<param>municipio_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/busqueda.php?estado_id=20&amp;municipio_id=67&amp;table=auditorio
+
+appears to include user input in:
+a(n) [option] tag [value] attribute
+
+The user input found was:
+municipio_id=67
+
+The user-controlled value was:
+67</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/busqueda.php?estado_id=20&amp;municipio_id=67&amp;table=auditorio</uri>
+									<method>GET</method>
+									<param>table</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/busqueda.php?estado_id=20&amp;municipio_id=67&amp;table=auditorio
+
+appears to include user input in:
+a(n) [input] tag [value] attribute
+
+The user input found was:
+table=auditorio
+
+The user-controlled value was:
+auditorio</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/busqueda.php?estado_id=18&amp;table=patrimonio_humanidad</uri>
+									<method>GET</method>
+									<param>estado_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/busqueda.php?estado_id=18&amp;table=patrimonio_humanidad
+
+appears to include user input in:
+a(n) [option] tag [value] attribute
+
+The user input found was:
+estado_id=18
+
+The user-controlled value was:
+18</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/busqueda.php?estado_id=9&amp;table=editorial</uri>
+									<method>GET</method>
+									<param>table</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/busqueda.php?estado_id=9&amp;table=editorial
+
+appears to include user input in:
+a(n) [input] tag [value] attribute
+
+The user input found was:
+table=editorial
+
+The user-controlled value was:
+editorial</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/busqueda.php?table=auditorio</uri>
+									<method>GET</method>
+									<param>table</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/busqueda.php?table=auditorio
+
+appears to include user input in:
+a(n) [input] tag [value] attribute
+
+The user input found was:
+table=auditorio
+
+The user-controlled value was:
+auditorio</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/datos.php?disciplina=literatura&amp;estado_id=14&amp;municipio_id=53&amp;table=convocatoria&amp;table_id=445</uri>
+									<method>GET</method>
+									<param>estado_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/datos.php?disciplina=literatura&amp;estado_id=14&amp;municipio_id=53&amp;table=convocatoria&amp;table_id=445
+
+appears to include user input in:
+a(n) [img] tag [width] attribute
+
+The user input found was:
+estado_id=14
+
+The user-controlled value was:
+14</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/datos.php?disciplina=literatura&amp;estado_id=22&amp;municipio_id=14&amp;table=convocatoria&amp;table_id=348</uri>
+									<method>GET</method>
+									<param>municipio_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/datos.php?disciplina=literatura&amp;estado_id=22&amp;municipio_id=14&amp;table=convocatoria&amp;table_id=348
+
+appears to include user input in:
+a(n) [img] tag [width] attribute
+
+The user input found was:
+municipio_id=14
+
+The user-controlled value was:
+14</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/datos.php?estado_id=14</uri>
+									<method>GET</method>
+									<param>estado_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/datos.php?estado_id=14
+
+appears to include user input in:
+a(n) [img] tag [width] attribute
+
+The user input found was:
+estado_id=14
+
+The user-controlled value was:
+14</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/datos.php?estado_id=14&amp;municipio_id=53&amp;table=museo&amp;table_id=2580</uri>
+									<method>GET</method>
+									<param>estado_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/datos.php?estado_id=14&amp;municipio_id=53&amp;table=museo&amp;table_id=2580
+
+appears to include user input in:
+a(n) [img] tag [width] attribute
+
+The user input found was:
+estado_id=14
+
+The user-controlled value was:
+14</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/datos.php?estado_id=22&amp;municipio_id=14&amp;table=auditorio&amp;table_id=1055</uri>
+									<method>GET</method>
+									<param>municipio_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/datos.php?estado_id=22&amp;municipio_id=14&amp;table=auditorio&amp;table_id=1055
+
+appears to include user input in:
+a(n) [img] tag [width] attribute
+
+The user input found was:
+municipio_id=14
+
+The user-controlled value was:
+14</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/datos.php?estado_id=32&amp;municipio_id=56&amp;table=patrimonio_humanidad&amp;table_id=12</uri>
+									<method>GET</method>
+									<param>table_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/datos.php?estado_id=32&amp;municipio_id=56&amp;table=patrimonio_humanidad&amp;table_id=12
+
+appears to include user input in:
+a(n) [img] tag [height] attribute
+
+The user input found was:
+table_id=12
+
+The user-controlled value was:
+12</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/datos.php?estado_id=12&amp;table=auditorio</uri>
+									<method>GET</method>
+									<param>estado_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/datos.php?estado_id=12&amp;table=auditorio
+
+appears to include user input in:
+a(n) [img] tag [height] attribute
+
+The user input found was:
+estado_id=12
+
+The user-controlled value was:
+12</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/datos.php?estado_id=18&amp;table=patrimonio_humanidad&amp;table_id=43</uri>
+									<method>GET</method>
+									<param>estado_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/datos.php?estado_id=18&amp;table=patrimonio_humanidad&amp;table_id=43
+
+appears to include user input in:
+a(n) [img] tag [height] attribute
+
+The user input found was:
+estado_id=18
+
+The user-controlled value was:
+18</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/ficha.php?disciplina=literatura&amp;table=revista&amp;table_id=157</uri>
+									<method>GET</method>
+									<param>disciplina</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/ficha.php?disciplina=literatura&amp;table=revista&amp;table_id=157
+
+appears to include user input in:
+a(n) [meta] tag [content] attribute
+
+The user input found was:
+disciplina=literatura
+
+The user-controlled value was:
+literatura mexicana</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/ficha.php?disciplina=literatura&amp;table=convocatoria&amp;table_id=348</uri>
+									<method>GET</method>
+									<param>table</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/ficha.php?disciplina=literatura&amp;table=convocatoria&amp;table_id=348
+
+appears to include user input in:
+a(n) [meta] tag [content] attribute
+
+The user input found was:
+table=convocatoria
+
+The user-controlled value was:
+convocatorias: premio nacional manuel herrera de dramaturgia: quer&#xe9;taro</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/ficha.php?disciplina=literatura&amp;table=convocatoria&amp;table_id=348</uri>
+									<method>GET</method>
+									<param>table_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/ficha.php?disciplina=literatura&amp;table=convocatoria&amp;table_id=348
+
+appears to include user input in:
+a(n) [meta] tag [content] attribute
+
+The user input found was:
+table_id=348
+
+The user-controlled value was:
+https://sic.cultura.gob.mx/ficha.php?table=convocatoria&amp;table_id=348</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/ficha.php?l&amp;table=educacion_artistica&amp;table_id=754</uri>
+									<method>GET</method>
+									<param>table</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/ficha.php?l&amp;table=educacion_artistica&amp;table_id=754
+
+appears to include user input in:
+a(n) [input] tag [value] attribute
+
+The user input found was:
+table=educacion_artistica
+
+The user-controlled value was:
+educacion_artistica</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/ficha.php?l&amp;table=educacion_artistica&amp;table_id=754</uri>
+									<method>GET</method>
+									<param>table_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/ficha.php?l&amp;table=educacion_artistica&amp;table_id=754
+
+appears to include user input in:
+a(n) [meta] tag [content] attribute
+
+The user input found was:
+table_id=754
+
+The user-controlled value was:
+https://sic.cultura.gob.mx/ficha.php?table=educacion_artistica&amp;table_id=754</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/ficha.php?table=auditorio&amp;table_id=335</uri>
+									<method>GET</method>
+									<param>table</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/ficha.php?table=auditorio&amp;table_id=335
+
+appears to include user input in:
+a(n) [meta] tag [content] attribute
+
+The user input found was:
+table=auditorio
+
+The user-controlled value was:
+auditorios: sala andr&#xe9;s henestrosa: </otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/ficha.php?table=auditorio&amp;table_id=335</uri>
+									<method>GET</method>
+									<param>table_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/ficha.php?table=auditorio&amp;table_id=335
+
+appears to include user input in:
+a(n) [meta] tag [content] attribute
+
+The user input found was:
+table_id=335
+
+The user-controlled value was:
+https://sic.cultura.gob.mx/ficha.php?table=auditorio&amp;table_id=335</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/index.php?disciplina=danza</uri>
+									<method>GET</method>
+									<param>disciplina</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/index.php?disciplina=danza
+
+appears to include user input in:
+a(n) [meta] tag [content] attribute
+
+The user input found was:
+disciplina=danza
+
+The user-controlled value was:
+danza : 210 recursos que posee el sistema de informaci&#xf3;n cultural en m&#xe9;xico </otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/index.php?estado_id=32&amp;table=auditorio</uri>
+									<method>GET</method>
+									<param>estado_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/index.php?estado_id=32&amp;table=auditorio
+
+appears to include user input in:
+a(n) [option] tag [value] attribute
+
+The user input found was:
+estado_id=32
+
+The user-controlled value was:
+32</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/index.php?estado_id=32&amp;table=auditorio</uri>
+									<method>GET</method>
+									<param>table</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/index.php?estado_id=32&amp;table=auditorio
+
+appears to include user input in:
+a(n) [meta] tag [content] attribute
+
+The user input found was:
+table=auditorio
+
+The user-controlled value was:
+auditorios : 20 recursos que posee el sistema de informaci&#xf3;n cultural en zacatecas</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/index.php?table=centrodoc</uri>
+									<method>GET</method>
+									<param>table</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/index.php?table=centrodoc
+
+appears to include user input in:
+a(n) [a] tag [target] attribute
+
+The user input found was:
+table=centrodoc
+
+The user-controlled value was:
+centrodoc</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/lista.php?disciplina=literatura&amp;estado_id=12</uri>
+									<method>GET</method>
+									<param>estado_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/lista.php?disciplina=literatura&amp;estado_id=12
+
+appears to include user input in:
+a(n) [option] tag [value] attribute
+
+The user input found was:
+estado_id=12
+
+The user-controlled value was:
+12</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/lista.php?disciplina&amp;estado_id=20&amp;table=auditorio</uri>
+									<method>GET</method>
+									<param>estado_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/lista.php?disciplina&amp;estado_id=20&amp;table=auditorio
+
+appears to include user input in:
+a(n) [option] tag [value] attribute
+
+The user input found was:
+estado_id=20
+
+The user-controlled value was:
+20</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/lista.php?estado_id=10&amp;municipio_id=-1&amp;table=auditorio</uri>
+									<method>GET</method>
+									<param>estado_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/lista.php?estado_id=10&amp;municipio_id=-1&amp;table=auditorio
+
+appears to include user input in:
+a(n) [option] tag [value] attribute
+
+The user input found was:
+estado_id=10
+
+The user-controlled value was:
+10</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/lista_recursos.php?estado_id=32</uri>
+									<method>GET</method>
+									<param>estado_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/lista_recursos.php?estado_id=32
+
+appears to include user input in:
+a(n) [option] tag [value] attribute
+
+The user input found was:
+estado_id=32
+
+The user-controlled value was:
+32</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/mapa.php?clat=19.049932180241000&amp;clon=-98.211503169423000&amp;disciplina=danza&amp;estado_id=21&amp;municipio_id=114&amp;table=universidad&amp;table_id=951&amp;z=16</uri>
+									<method>GET</method>
+									<param>estado_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/mapa.php?clat=19.049932180241000&amp;clon=-98.211503169423000&amp;disciplina=danza&amp;estado_id=21&amp;municipio_id=114&amp;table=universidad&amp;table_id=951&amp;z=16
+
+appears to include user input in:
+a(n) [option] tag [value] attribute
+
+The user input found was:
+estado_id=21
+
+The user-controlled value was:
+21</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/mapa.php?clat=19.388708084789000&amp;clon=-99.228505030274000&amp;disciplina=cine&amp;estado_id=9&amp;municipio_id=10&amp;table=centro_educacion&amp;table_id=1177&amp;z=16</uri>
+									<method>GET</method>
+									<param>municipio_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/mapa.php?clat=19.388708084789000&amp;clon=-99.228505030274000&amp;disciplina=cine&amp;estado_id=9&amp;municipio_id=10&amp;table=centro_educacion&amp;table_id=1177&amp;z=16
+
+appears to include user input in:
+a(n) [option] tag [value] attribute
+
+The user input found was:
+municipio_id=10
+
+The user-controlled value was:
+10</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/mapa.php?clat=19.049932180241000&amp;clon=-98.211503169423000&amp;disciplina=danza&amp;estado_id=21&amp;municipio_id=114&amp;table=universidad&amp;table_id=951&amp;z=16</uri>
+									<method>GET</method>
+									<param>z</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/mapa.php?clat=19.049932180241000&amp;clon=-98.211503169423000&amp;disciplina=danza&amp;estado_id=21&amp;municipio_id=114&amp;table=universidad&amp;table_id=951&amp;z=16
+
+appears to include user input in:
+a(n) [option] tag [value] attribute
+
+The user input found was:
+z=16
+
+The user-controlled value was:
+16</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/mapa.php?clat=22.768050883205000&amp;clon=-102.558237703910000&amp;estado_id=32&amp;municipio_id=56&amp;table=auditorio&amp;table_id=1394&amp;z=16</uri>
+									<method>GET</method>
+									<param>estado_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/mapa.php?clat=22.768050883205000&amp;clon=-102.558237703910000&amp;estado_id=32&amp;municipio_id=56&amp;table=auditorio&amp;table_id=1394&amp;z=16
+
+appears to include user input in:
+a(n) [option] tag [value] attribute
+
+The user input found was:
+estado_id=32
+
+The user-controlled value was:
+32</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/mapa.php?clat=25.834340192378000&amp;clon=-103.847011327740000&amp;estado_id=10&amp;municipio_id=13&amp;table=auditorio&amp;table_id=1883&amp;z=16</uri>
+									<method>GET</method>
+									<param>municipio_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/mapa.php?clat=25.834340192378000&amp;clon=-103.847011327740000&amp;estado_id=10&amp;municipio_id=13&amp;table=auditorio&amp;table_id=1883&amp;z=16
+
+appears to include user input in:
+a(n) [option] tag [value] attribute
+
+The user input found was:
+municipio_id=13
+
+The user-controlled value was:
+13</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/mapa.php?clat=22.768050883205000&amp;clon=-102.558237703910000&amp;estado_id=32&amp;municipio_id=56&amp;table=auditorio&amp;table_id=1394&amp;z=16</uri>
+									<method>GET</method>
+									<param>table</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/mapa.php?clat=22.768050883205000&amp;clon=-102.558237703910000&amp;estado_id=32&amp;municipio_id=56&amp;table=auditorio&amp;table_id=1394&amp;z=16
+
+appears to include user input in:
+a(n) [div] tag [id] attribute
+
+The user input found was:
+table=auditorio
+
+The user-controlled value was:
+auditorio</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/mapa.php?clat=19.031284655270000&amp;clon=-98.206615893462000&amp;estado_id=21&amp;municipio_id=114&amp;table=fototeca&amp;table_id=26&amp;z=16</uri>
+									<method>GET</method>
+									<param>table_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/mapa.php?clat=19.031284655270000&amp;clon=-98.206615893462000&amp;estado_id=21&amp;municipio_id=114&amp;table=fototeca&amp;table_id=26&amp;z=16
+
+appears to include user input in:
+a(n) [option] tag [value] attribute
+
+The user input found was:
+table_id=26
+
+The user-controlled value was:
+26</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/mapa.php?clat=22.768050883205000&amp;clon=-102.558237703910000&amp;estado_id=32&amp;municipio_id=56&amp;table=auditorio&amp;table_id=1394&amp;z=16</uri>
+									<method>GET</method>
+									<param>z</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/mapa.php?clat=22.768050883205000&amp;clon=-102.558237703910000&amp;estado_id=32&amp;municipio_id=56&amp;table=auditorio&amp;table_id=1394&amp;z=16
+
+appears to include user input in:
+a(n) [option] tag [value] attribute
+
+The user input found was:
+z=16
+
+The user-controlled value was:
+16</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/mapa.php?disciplina=teatro</uri>
+									<method>GET</method>
+									<param>disciplina</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/mapa.php?disciplina=teatro
+
+appears to include user input in:
+a(n) [div] tag [id] attribute
+
+The user input found was:
+disciplina=teatro
+
+The user-controlled value was:
+teatro</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/mapa.php?estado_id=29&amp;municipio_id=33&amp;table=otra_bib&amp;table_id=6281</uri>
+									<method>GET</method>
+									<param>estado_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/mapa.php?estado_id=29&amp;municipio_id=33&amp;table=otra_bib&amp;table_id=6281
+
+appears to include user input in:
+a(n) [option] tag [value] attribute
+
+The user input found was:
+estado_id=29
+
+The user-controlled value was:
+29</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/mapa.php?estado_id=32&amp;table=auditorio</uri>
+									<method>GET</method>
+									<param>estado_id</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/mapa.php?estado_id=32&amp;table=auditorio
+
+appears to include user input in:
+a(n) [option] tag [value] attribute
+
+The user input found was:
+estado_id=32
+
+The user-controlled value was:
+32</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/mapa.php?estado_id=32&amp;table=auditorio</uri>
+									<method>GET</method>
+									<param>table</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/mapa.php?estado_id=32&amp;table=auditorio
+
+appears to include user input in:
+a(n) [div] tag [id] attribute
+
+The user input found was:
+table=auditorio
+
+The user-controlled value was:
+auditorio</otherinfo>
+								</instance>
+							
+							
+								<instance>
+									<uri>https://sic.cultura.gob.mx/mapa.php?table=auditorio</uri>
+									<method>GET</method>
+									<param>table</param>
+									<attack></attack>
+									<evidence></evidence>
+									<otherinfo>User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:
+
+https://sic.cultura.gob.mx/mapa.php?table=auditorio
+
+appears to include user input in:
+a(n) [div] tag [id] attribute
+
+The user input found was:
+table=auditorio
+
+The user-controlled value was:
+auditorio</otherinfo>
+								</instance>
+							
+						</instances>
+						<count>52</count>
+						<solution>&lt;p&gt;Validate all input and sanitize output it before writing to any HTML attributes.&lt;/p&gt;</solution>
+						<otherinfo>&lt;p&gt;User-controlled HTML attribute values were found. Try injecting special characters to see if XSS might be possible. The page at the following URL:&lt;/p&gt;&lt;p&gt;&lt;/p&gt;&lt;p&gt;https://sic.cultura.gob.mx/?disciplina=literatura&lt;/p&gt;&lt;p&gt;&lt;/p&gt;&lt;p&gt;appears to include user input in:&lt;/p&gt;&lt;p&gt;a(n) [meta] tag [content] attribute&lt;/p&gt;&lt;p&gt;&lt;/p&gt;&lt;p&gt;The user input found was:&lt;/p&gt;&lt;p&gt;disciplina=literatura&lt;/p&gt;&lt;p&gt;&lt;/p&gt;&lt;p&gt;The user-controlled value was:&lt;/p&gt;&lt;p&gt;literatura : 329 recursos que posee el sistema de informaci&#xf3;n cultural en m&#xe9;xico &lt;/p&gt;</otherinfo>
+						<reference>&lt;p&gt;https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html&lt;/p&gt;</reference>
+						<cweid>20</cweid>
+						<wascid>20</wascid>
+						<sourceid>6281</sourceid>
+					</alertitem>
+				
+			</alerts>
+		</site>
+	
+</OWASPZAPReport>
