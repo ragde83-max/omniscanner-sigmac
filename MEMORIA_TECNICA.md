@@ -132,3 +132,53 @@ Se implementó un sistema de control de errores al llamar a la API de Gemini:
 
 ## 5. Conclusión
 Las actualizaciones transforman el aplicativo en una herramienta Enterprise-ready. La sinergia entre Gemini 2.5 Pro, una interfaz rediseñada y un motor de reportes HTML avanzado permite entregar resultados de auditoría técnica precisos y comprensibles a nivel ejecutivo, todo dentro del ecosistema de Streamlit y Google Cloud.
+
+---
+
+## 6. Guía de Implementación y Despliegue en Otros Ambientes
+
+Para migrar, desplegar o reinstalar **OmniScanner AI** en un entorno productivo nuevo (como Streamlit Community Cloud o servidores on-premise), es obligatorio configurar correctamente la plataforma, las dependencias y las variables de entorno.
+
+### 6.1. Requisitos Previos y Entorno Local
+1. **Python:** 3.10 o superior.
+2. **Dependencias:** Instalar usando `pip install -r requirements.txt`.
+3. **Claves de API (Local):** Se debe crear el directorio `.streamlit` en la raíz del proyecto y generar un archivo `secrets.toml` con el siguiente formato básico:
+   ```toml
+   # .streamlit/secrets.toml
+   GEMINI_API_KEY = "TU_API_KEY"
+   
+   [google_oauth]
+   client_id = "TU_CLIENT_ID"
+   client_secret = "TU_CLIENT_SECRET"
+   redirect_uri = "http://localhost:8501/oauth2callback"
+   ```
+
+### 6.2. Despliegue en Streamlit Community Cloud
+Si el proyecto se va a lanzar al público a través de Streamlit Share, se deben aplicar las siguientes configuraciones de seguridad e infraestructura:
+
+**A. Google Cloud OAuth (Nuevo Proyecto)**
+Se requiere configurar una pantalla de consentimiento (OAuth Consent Screen) en Google Cloud Console exclusiva para OmniScanner.
+- **Authorized JavaScript origins:** `https://omniscanner-sigmac.streamlit.app`
+- **Authorized redirect URIs:** `https://omniscanner-sigmac.streamlit.app/oauth2callback`
+
+**B. Configuración de Secrets en Producción**
+En el panel de control de Streamlit Cloud (Settings > Secrets), se debe inyectar la siguiente configuración (sustituyendo los valores reales):
+```toml
+[auth]
+redirect_uri        = "https://omniscanner-sigmac.streamlit.app/oauth2callback"
+cookie_secret       = "SECRETO_DE_AL_MENOS_32_CARACTERES"
+client_id           = "TU_GOOGLE_CLIENT_ID"
+client_secret       = "TU_GOOGLE_CLIENT_SECRET"
+server_metadata_url = "https://accounts.google.com/.well-known/openid-configuration"
+
+[access]
+# Lista separada por comas de usuarios autorizados para hacer login
+allowed_emails = "usuario@empresa.com,admin@empresa.com"
+```
+
+### 6.3. Mantenimiento y Configuración DNS Corporativa
+- **Anti-hibernación:** Si se usa un plan gratuito (como en Streamlit Cloud que duerme las apps inactivas), se recomienda crear un *Cron Job* en tu servidor web (Ej: Hostgator cPanel) que haga ping cada 12 horas:
+  `curl -s https://omniscanner-sigmac.streamlit.app > /dev/null 2>&1`
+- **Subdominio Corporativo:** Si se requiere apuntar a un subdominio propio, se debe crear un registro `CNAME` en el administrador DNS corporativo apuntando hacia la URL base de la app.
+
+> ⚠️ **Consideración de Seguridad Crítica:** El archivo local `.streamlit/secrets.toml` se encuentra en el `.gitignore` por defecto. **JAMÁS** debe incluirse en los commits del repositorio de GitHub. Si el disco duro falla, estos secretos deberán ser generados nuevamente o extraídos de un gestor de contraseñas seguro.
