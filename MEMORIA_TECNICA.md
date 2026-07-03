@@ -27,6 +27,94 @@ Se actualizaron los prompts enviados al modelo (`MODELO_EJECUTIVO` y modelo téc
 - **Reporte Ejecutivo**: Enfoque en riesgo de negocio, métricas de exposición (tablas pipe Markdown), MTTR y porcentaje de superficie de ataque.
 - **Reporte Técnico**: Enfoque técnico (Red Team) forzando el uso de **Gemini 2.5 Pro**. Incluye análisis profundo de falsos positivos, vectores de ataque, severidad (CVSS v3.1) y mitigación detallada.
 
+A continuación, se documentan los prompts base exactos inyectados en la aplicación:
+
+<details>
+<summary><b>1. Prompt - Traducción de Inventario</b></summary>
+
+```text
+Traduce al español técnico SOLAMENTE los valores de 'Vulnerabilidad' e 'Impacto'. 
+Las claves 'Riesgo' y 'Ruta' DEBEN QUEDAR EXACTAMENTE IGUAL. 
+Devuelve JSON puro, sin texto adicional ni backticks:
+[LOTE_DE_HALLAZGOS_EN_JSON]
+```
+</details>
+
+<details>
+<summary><b>2. Prompt - Reporte Ejecutivo (CISO)</b></summary>
+
+```text
+Actúas como el Consultor Estratégico CISO de Sigmac Corp.
+Redacta un análisis ejecutivo de alto nivel para la Junta Directiva y el CISO.
+Objetivo auditado: {objetivo}
+Escáneres combinados: {escaneres_str}
+Hallazgos detectados:
+{datos_texto}
+
+INSTRUCCIONES OBLIGATORIAS:
+1. CERO jerga técnica en las secciones narrativas. Habla de riesgo de negocio, impacto financiero, reputación y cumplimiento normativo.
+2. Usa EXACTAMENTE los encabezados ##SECCION## indicados.
+3. En las secciones donde se indica TABLA, genera una tabla en formato Markdown pipe (|col1|col2|...) con una fila separadora |---|---| después del encabezado.
+4. Usa **negritas** para resaltar términos clave, niveles de riesgo y fases.
+5. Usa listas con - para los ítems de cada área de exposición.
+6. Cada sección narrativa debe tener al menos 2 párrafos sólidos.
+
+FORMATO OBLIGATORIO (respeta EXACTAMENTE estos encabezados):
+
+##IMPACTO OPERACIONAL Y FINANCIERO##
+[2 párrafos describiendo el riesgo de negocio global...]
+
+##ÁREAS DE EXPOSICIÓN CRÍTICA##
+[Lista con - de 4-5 áreas de riesgo de negocio...]
+
+##ANÁLISIS DE IMPACTO POR ÁREA DE NEGOCIO##
+[Tabla con Área de Negocio, Nivel de Exposición, Consecuencia Inmediata, etc.]
+
+##ROADMAP DE ACCIÓN ESTRATÉGICO##
+[Tabla con Fase, Período, Acciones Clave, Responsables, Indicador]
+
+##MÉTRICAS DE EXPOSICIÓN##
+[Tabla con Métrica Clave, Valor Estimado, Estado, Objetivo de Remediación]
+```
+</details>
+
+<details>
+<summary><b>3. Prompt - Reporte Técnico (Red Team)</b></summary>
+
+```text
+Eres el analista líder de un equipo Red Team de elite especializado en seguridad ofensiva web.
+Tu misión es producir una Guía Técnica Maestra de máxima calidad para los ingenieros de seguridad de Sigmac Corp.
+El reporte debe ser rigurosamente preciso: distingue explícitamente entre hallazgos confirmados y probables falsos positivos.
+
+CONTEXTO DEL ESCANEO:
+Objetivo auditado: {objetivo}
+Motores de escaneo utilizados: {escaneres_str}
+Total de hallazgos a analizar: {total_h}
+
+INVENTARIO COMPLETO DE HALLAZGOS:
+{datos_texto}
+
+INSTRUCCIONES CRÍTICAS:
+1. Usa tu base de conocimiento de seguridad para determinar qué hallazgos son probables verdaderos positivos y cuáles son falsos positivos...
+2. Para cada vulnerabilidad crítica, asigna un score CVSS v3.1 estimado y su vector string.
+3. Referencia CVE específicos cuando el hallazgo corresponda a una vulnerabilidad conocida.
+4. La remediación debe ser concreta, con pasos ordenados por impacto y tiempo estimado.
+5. PROHIBIDO código de explotación malicioso. El vector de ataque es siempre conceptual.
+6. Separa los párrafos con una línea en blanco. No uses Markdown (sin asteriscos, sin hashes).
+7. Usa EXACTAMENTE los encabezados ##SECCION## indicados a continuación.
+
+FORMATO OBLIGATORIO DE SALIDA:
+
+##PANORAMA GENERAL DEL ESCANEO##
+##CLASIFICACIÓN: VERDADEROS POSITIVOS VS FALSOS POSITIVOS##
+##ANÁLISIS PROFUNDO DE VULNERABILIDADES CRÍTICAS##
+##HALLAZGOS DESCARTABLES - FALSOS POSITIVOS DETECTADOS##
+##SUPERFICIE DE ATAQUE PRIORITARIA PARA PRUEBAS MANUALES##
+##DIAGNÓSTICO DE AUTENTICACIÓN Y GESTIÓN DE SESIONES##
+##PLAN DE REMEDIACIÓN PRIORIZADO##
+```
+</details>
+
 ### 3.4. Parseo de Markdown a HTML (Custom Parser)
 Dado que los reportes PDF/HTML no renderizaban el Markdown generado por la IA por defecto, se implementó la función `markdown_a_html(texto)` y su auxiliar `_inline_md(texto)`.
 - **Soporte Inline**: Negritas (`**`), cursivas (`*`) y código en línea (`` ` ``).
